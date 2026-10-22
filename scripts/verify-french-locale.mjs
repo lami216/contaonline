@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import {translateText,formatNumber} from '../approved-runtime/i18n.js';
+import {recordExportData,recordWorkbook} from '../approved-runtime/record-export.js';
+import {reportModel,reportHtml} from '../approved-runtime/report-output.js';
+
+assert.equal(translateText('إنشاء المحل','fr'),'Créer le magasin');
+assert.equal(translateText('1–50 من 306','fr'),'1–50 sur 306');
+assert.equal(translateText('مصدر صافي الربح','fr'),'Origine : Résultat net');
+assert.equal(translateText('2026-10-19','fr'),'19/10/2026');
+assert.equal(translateText('2026-10-19','ar'),'2026-10-19');
+assert.equal(translateText('أدخل مبلغًا أكبر من صفر.','fr'),'Saisissez un montant supérieur à zéro.');
+const state={branding:'Commerce Central',products:[{id:1,name:'المبيعات'}],parties:[{id:1,type:'customer',name:'الربح الإجمالي'}],accounts:[{id:1,name:'نقدي'}]};
+const records=[{id:1,kind:'sale',date:'2026-10-19',time:'10:20',number:'SALE-1',title:'الربح الإجمالي',subtitle:'Vente',party:1,account:1,warehouse:'المخزن الرئيسي',total:27,paid:27,due:0,profit:10,note:'هذه ملاحظة العميل',lines:[{product:1,name:'المبيعات',qty:2,price:13.5,costAtSale:8.5}]}];
+const original=JSON.stringify({state,records});
+const sheets=recordExportData(state,records,{sale:'فاتورة بيع'},{language:'fr'}),sheetText=JSON.stringify(sheets);
+assert.ok(sheetText.includes('Prix unitaire MRU'));assert.ok(sheetText.includes('المبيعات'));assert.ok(sheetText.includes('الربح الإجمالي'));assert.ok(sheetText.includes('هذه ملاحظة العميل'));assert.ok(sheetText.includes('Dépôt principal'));assert.ok(sheetText.includes('Espèces'));
+const workbook=Buffer.from(await recordWorkbook(sheets,{language:'fr'}).arrayBuffer()).toString();
+assert.ok(workbook.includes('rightToLeft="0"'));assert.ok(workbook.includes('readingOrder="1"'));
+const model=reportModel(state,records,{sale:'فاتورة بيع'},'Toute la période',{language:'fr'});assert.equal(model.dir,'ltr');assert.ok(reportHtml(model).includes('Date d’exportation'));assert.ok(reportHtml(model).includes('هذه ملاحظة العميل'));
+assert.equal(JSON.stringify({state,records}),original);
+assert.equal(recordExportData(state,records,{sale:'فاتورة بيع'})[0].name,'المستندات');
+console.log('PASS French templates, dates, validation, LTR Excel/print, unchanged accounting state and original user names/notes');

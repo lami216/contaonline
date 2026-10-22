@@ -1,0 +1,372 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/lami216/Contamobile",
+  "branch": "feat/approved-seller-app",
+  "commit": "1efb01fc1cd7bc62670510e57c6158734ad4bf05",
+  "files": [
+    {
+      "source": "approved-runtime/index.html",
+      "destination": "approved-runtime/index.html",
+      "bytes": 1175,
+      "sha256": "978e5b36c58f445ed702f174efdbfee38490bc82ff022020268cd6ba678f4e91",
+      "gitBlob": "e8300beea6029587b4ff74b0a2a7e3a0e7fa80e7"
+    },
+    {
+      "source": "approved-runtime/app.js",
+      "destination": "approved-runtime/app.js",
+      "bytes": 68217,
+      "sha256": "0abe82cf992ee651e7b9a5f73caae8f9671b271d7d78a2267dec511b234582c5",
+      "gitBlob": "c79bb5f6b19ed3f6c585d040900b0dc4a92a1e70"
+    },
+    {
+      "source": "approved-runtime/engine.js",
+      "destination": "approved-runtime/engine.js",
+      "bytes": 238666,
+      "sha256": "756c8a36d6f0846d15653db9d933a8d2f1ec5bba700cecad01b1057309dd40a7",
+      "gitBlob": "28b04b423beb80801a973d0ee926195b1fbef782"
+    },
+    {
+      "source": "approved-runtime/database.js",
+      "destination": "approved-runtime/database.js",
+      "bytes": 7378,
+      "sha256": "0013d8d1533c89817e5b53678677da459e9d9ec412bf25ab0f9aa4b23cb500e3",
+      "gitBlob": "a085dbcd1416290be37bc068f7baa3846275ee64"
+    },
+    {
+      "source": "approved-runtime/barcode-camera.js",
+      "destination": "approved-runtime/barcode-camera.js",
+      "bytes": 4615,
+      "sha256": "de26f25e5bf9a3982181655ea874f693d7ea7670b0c00c37188f0c8ef171d95f",
+      "gitBlob": "f9cf86f626b5017412524bd75b64560ccbd1e2d8"
+    },
+    {
+      "source": "approved-runtime/desktop-french.js",
+      "destination": "approved-runtime/desktop-french.js",
+      "bytes": 75437,
+      "sha256": "a0dae0427653205d4d0922c45773303365cbcd8e6fb45add15cb8868d81fe634",
+      "gitBlob": "4607a4cc25b813883a567d3834aa9596d83d9263"
+    },
+    {
+      "source": "approved-runtime/desktop-opening.js",
+      "destination": "approved-runtime/desktop-opening.js",
+      "bytes": 13797,
+      "sha256": "c60ae47d066ecc2b9db32453063854172f6de909e9945484c0c06c51f9004bc9",
+      "gitBlob": "3ff6b9e0d1a54585ba82ad05cfd827c46d70af03"
+    },
+    {
+      "source": "approved-runtime/feature-admin.js",
+      "destination": "approved-runtime/feature-admin.js",
+      "bytes": 19426,
+      "sha256": "389b6ee93a70b3e97282cc6428672c460ded02d0bfda77fcc91ba83815bcd2ab",
+      "gitBlob": "2e7eb7cb9198d5ceb2d156c9ac54e95e04fc3925"
+    },
+    {
+      "source": "approved-runtime/feature-french.js",
+      "destination": "approved-runtime/feature-french.js",
+      "bytes": 16088,
+      "sha256": "0d6051cb261e01daf06339d80b5002ca601411d42bbf4848c1300707ddfd1606",
+      "gitBlob": "5b5c80262f0fa07ec0734567d2527a3676823029"
+    },
+    {
+      "source": "approved-runtime/feature-import.js",
+      "destination": "approved-runtime/feature-import.js",
+      "bytes": 7803,
+      "sha256": "451368032700b73c401a42c22bdd1aa03aa25254a1cf8ea2f24f1946eea141c5",
+      "gitBlob": "139a7c4c8628c5339ce69f8252c2d4c60bc174e7"
+    },
+    {
+      "source": "approved-runtime/feature-reports.js",
+      "destination": "approved-runtime/feature-reports.js",
+      "bytes": 12522,
+      "sha256": "8ee4858ab275ed2de8d2988dde528b0481d5bfa16d056eaa521aabebc7382727",
+      "gitBlob": "a6f52ba9b00bfaa56fdb130ef8ae7964ba037aca"
+    },
+    {
+      "source": "approved-runtime/feature-stock.js",
+      "destination": "approved-runtime/feature-stock.js",
+      "bytes": 13334,
+      "sha256": "9384832883997d4629537e4b987cdfc5dcadea846ca22f26f41166bc0ff9512b",
+      "gitBlob": "65cc78db58bd3effdaa51f5b3c176c1867bb9b21"
+    },
+    {
+      "source": "approved-runtime/feature-system.js",
+      "destination": "approved-runtime/feature-system.js",
+      "bytes": 2059,
+      "sha256": "970e86e252e01ff2fbb32ca4cdac72f6d693c87accee004b2cb05fc05b5e0f61",
+      "gitBlob": "30d647712540d426f8a7606d5252bccd568ae5e3"
+    },
+    {
+      "source": "approved-runtime/features.css",
+      "destination": "approved-runtime/features.css",
+      "bytes": 6504,
+      "sha256": "4684eb2680203d2866b899e32bcf5d5301643a096afb54e6394877dd3d12732b",
+      "gitBlob": "7bca020dd149dd5e4cc04a761d60b9a6c4224759"
+    },
+    {
+      "source": "approved-runtime/features.js",
+      "destination": "approved-runtime/features.js",
+      "bytes": 13422,
+      "sha256": "ef0582b8f9c7cc63e4ee635eea8edc84c7c6dbbbf79b2f58e759435b5a95588f",
+      "gitBlob": "134c3a29b5ef7fb6769ef7d3a0cd07927ca48466"
+    },
+    {
+      "source": "approved-runtime/i18n.js",
+      "destination": "approved-runtime/i18n.js",
+      "bytes": 2850,
+      "sha256": "e40044024ac89dc2b0520b52f730e571d90ed51e858e3ee6af9071b9e2a176f0",
+      "gitBlob": "ba3403aa58fe732b31a8ee32059c448087958fbf"
+    },
+    {
+      "source": "approved-runtime/import-domain.js",
+      "destination": "approved-runtime/import-domain.js",
+      "bytes": 10566,
+      "sha256": "ffb69e7b4dd9132d42eadc418c825bb3226cdcf0d417943a2817792d8bc19c84",
+      "gitBlob": "9378434781ece0dec2a54ce9a3e03e54577a130a"
+    },
+    {
+      "source": "approved-runtime/invoice-view.js",
+      "destination": "approved-runtime/invoice-view.js",
+      "bytes": 4973,
+      "sha256": "fbaac7d335d6a3fc20c9cd9be43eb4d60ac82a3e6abe507579f3e0d763d9165f",
+      "gitBlob": "e457d88a6c2cf44f3cddd9b3d73d96d58a9b61d9"
+    },
+    {
+      "source": "approved-runtime/language.js",
+      "destination": "approved-runtime/language.js",
+      "bytes": 40997,
+      "sha256": "e2a08fa6abbefa81807c4d950595850ad22d65e4eed118ea1c46bfe56213e00d",
+      "gitBlob": "f4843b2f9b7724ede2f1f319fb3567df99df5f51"
+    },
+    {
+      "source": "approved-runtime/legacy-import.js",
+      "destination": "approved-runtime/legacy-import.js",
+      "bytes": 32276,
+      "sha256": "287297331067d2e12b898000b076c01713e1fc6e24c9a8668d379e7d7158d62b",
+      "gitBlob": "7cc3386f5499ab886fdafb314bed0dceea0a6f38"
+    },
+    {
+      "source": "approved-runtime/locale-layout.css",
+      "destination": "approved-runtime/locale-layout.css",
+      "bytes": 3686,
+      "sha256": "557704b5678d1771a8f532b6eed7de8942fa713375cb444cbc27095a9200021a",
+      "gitBlob": "05e392e6735b9844d470347cdfdb1a9607163029"
+    },
+    {
+      "source": "approved-runtime/manifest.webmanifest",
+      "destination": "approved-runtime/manifest.webmanifest",
+      "bytes": 182,
+      "sha256": "2dd1b23e5f8bd6ba812b1dce7af81f90ed39687663e60d6efd8240bdb9f1130b",
+      "gitBlob": "e80a01e96cdbd1a1065059a82cf21d61d172c6bd"
+    },
+    {
+      "source": "approved-runtime/mobile-french.js",
+      "destination": "approved-runtime/mobile-french.js",
+      "bytes": 38729,
+      "sha256": "9858518a281f1fc1dd74516992180e5ee62c719a45d968449df9914343b23349",
+      "gitBlob": "ef47995e69f413b9765e9b58753d405fc6e86002"
+    },
+    {
+      "source": "approved-runtime/party-metrics.js",
+      "destination": "approved-runtime/party-metrics.js",
+      "bytes": 2757,
+      "sha256": "fc69d8edfff3050fd6a565c7ff89a9a20d478742566fdc867d6c8d2b1110679b",
+      "gitBlob": "4e1e21cd1d795e2931671b1f82ba45042f84bbbe"
+    },
+    {
+      "source": "approved-runtime/party-summary.css",
+      "destination": "approved-runtime/party-summary.css",
+      "bytes": 4408,
+      "sha256": "a3e5b128b32aff36442bc443aa04276674069b3efb17a89aedaaa69a8b46f141",
+      "gitBlob": "dc48c31b1549d2f8125b22e266a914e50af770a0"
+    },
+    {
+      "source": "approved-runtime/permission-catalog.js",
+      "destination": "approved-runtime/permission-catalog.js",
+      "bytes": 5327,
+      "sha256": "02db553d325873bb97eedd815d4b87896a1b495590b23e5de74dc594841b2522",
+      "gitBlob": "532e63324cc3c094287c13438cb5f36baabe04de"
+    },
+    {
+      "source": "approved-runtime/permission-dependencies.js",
+      "destination": "approved-runtime/permission-dependencies.js",
+      "bytes": 3183,
+      "sha256": "77e500a413562545745f0152b14cfda2add246e6d6bdef19ebdc095ef18dbfbb",
+      "gitBlob": "98a193a853435cdf1b202e004d9fdab048785092"
+    },
+    {
+      "source": "approved-runtime/permissions.js",
+      "destination": "approved-runtime/permissions.js",
+      "bytes": 3143,
+      "sha256": "f7e79b1a6c701fcc526d0b92656a63096c11aa775858f7832095a0e85ac7e306",
+      "gitBlob": "f548fa4f599ec5a414cf95dbb66d88167395f4d9"
+    },
+    {
+      "source": "approved-runtime/pos.css",
+      "destination": "approved-runtime/pos.css",
+      "bytes": 15639,
+      "sha256": "f503e5e69fd21a37f010597c9a64f2019e4a746357f1e631f6b2622154144fe1",
+      "gitBlob": "a1d11897e9480ed3394db817f8bc9c8ab94cbb2a"
+    },
+    {
+      "source": "approved-runtime/product-names.js",
+      "destination": "approved-runtime/product-names.js",
+      "bytes": 1296,
+      "sha256": "3b3b11bd46db412755892bf8a32283da5e9842a5df057616ea52340e85b113d8",
+      "gitBlob": "6444c344ed50d1810ca86eeb0c23b0a40430fab6"
+    },
+    {
+      "source": "approved-runtime/record-export.js",
+      "destination": "approved-runtime/record-export.js",
+      "bytes": 9152,
+      "sha256": "16fa32eabe02bc5f90bca6109e2aa342f757d79077000824933183f6bfaa5dbc",
+      "gitBlob": "68838d50682226dc0493013673d40b447e66df30"
+    },
+    {
+      "source": "approved-runtime/report-data.js",
+      "destination": "approved-runtime/report-data.js",
+      "bytes": 18104,
+      "sha256": "8da3cc641edee28f0d885425737587116329b48b7339df669e84fd5defd32218",
+      "gitBlob": "09f5188d95909a8d92a9a3cebd577ee646dd045a"
+    },
+    {
+      "source": "approved-runtime/report-output.js",
+      "destination": "approved-runtime/report-output.js",
+      "bytes": 12391,
+      "sha256": "d3e8646cbe57b2e545d0652078d49d981fe559967aa399d2e61785436fca3757",
+      "gitBlob": "cf8b8d550b4c43d5cee9b8faa59c3caf65f298aa"
+    },
+    {
+      "source": "approved-runtime/site.css",
+      "destination": "approved-runtime/site.css",
+      "bytes": 43787,
+      "sha256": "ebaee5579c54d9311f0c862a79339a84cf25153c5bb07f2480cb5be1f2ef72ce",
+      "gitBlob": "34c2908fae1256dbbde633a7e9f32c992c730075"
+    },
+    {
+      "source": "approved-runtime/stock-domain.js",
+      "destination": "approved-runtime/stock-domain.js",
+      "bytes": 7251,
+      "sha256": "c26a1b2b6d8fa831f68e8c466e3458243372b54833a57a3f94924fe6d8022c50",
+      "gitBlob": "1a1efdcf21f36c7ff847010ef301e81c81486c18"
+    },
+    {
+      "source": "approved-runtime/sw.js",
+      "destination": "approved-runtime/sw.js",
+      "bytes": 1831,
+      "sha256": "b1157f4527727b91d7a014181d3b03c7c1530cd206632dd80899cadee91648e6",
+      "gitBlob": "c07d1db2318aaa82d6b2744d4581fa1024deb5e2"
+    },
+    {
+      "source": "approved-runtime/theme.css",
+      "destination": "approved-runtime/theme.css",
+      "bytes": 71914,
+      "sha256": "52751cf7ba580769d13aedb4b274049f1762f04f0a0b7c8d32b7ee9c7caf00c3",
+      "gitBlob": "dae2fb2ec5b99da3dd06f6e2b0848922939fb02f"
+    },
+    {
+      "source": "approved-runtime/upgrade-state.js",
+      "destination": "approved-runtime/upgrade-state.js",
+      "bytes": 7109,
+      "sha256": "ce8e519b526bb6bddf32fc799b2b2af76ca90ddc6df2b05d2c13665bb8fc4a7c",
+      "gitBlob": "620c1d303fc65b72771624c23895cc0ac5f48c5e"
+    },
+    {
+      "source": "approved-runtime/xlsx-format.js",
+      "destination": "approved-runtime/xlsx-format.js",
+      "bytes": 3440,
+      "sha256": "f7618583e4ec0194eaaca96c31ed49e04cb57467b33065bfb126dd64fa314d57",
+      "gitBlob": "52cf8a26ed4561a77364e6071f5dee6de3d05b7c"
+    },
+    {
+      "source": "approved-runtime/account-support.css",
+      "destination": "approved-runtime/account-support.css",
+      "bytes": 6187,
+      "sha256": "c921307728963a09e8d23550cc0e3044348eb40a6c7e23b4bd2d8aebd2a8b8e1",
+      "gitBlob": "a43b901404e5bce722f31d16e6efb6b2403f4a96"
+    },
+    {
+      "source": "approved-runtime/assets/alkarna-logo.png",
+      "destination": "approved-runtime/assets/alkarna-logo.png",
+      "bytes": 71235,
+      "sha256": "71fea980f64f8f0fafd303c4cf6f1039c5bfbf6b6337ac7ca8d332ddef001fe1",
+      "gitBlob": "697ffb900b6066c09057b805c81dc6ec97955aca"
+    },
+    {
+      "source": "approved-runtime/assets/support-contact.png",
+      "destination": "approved-runtime/assets/support-contact.png",
+      "bytes": 95512,
+      "sha256": "f6eebee3819e089aa0ebd4a93a4db65b22b8cfb915212fdc78ee8a7bf1e72e54",
+      "gitBlob": "983053e21e997be223db1478d391e5431360ed88"
+    },
+    {
+      "source": "approved-runtime/assets/sql.js-LICENSE",
+      "destination": "approved-runtime/assets/sql.js-LICENSE",
+      "bytes": 2199,
+      "sha256": "60a3f6e4d7b29b4321359e683b36cf198d24f58e24582070f56e6fa89d5ee2be",
+      "gitBlob": "d5c3c98341738da8ae57423fd52e7d4b9dd9ba4c"
+    },
+    {
+      "source": "scripts/verify-feature-domains.mjs",
+      "destination": "scripts/verify-feature-domains.mjs",
+      "bytes": 7200,
+      "sha256": "22a29393282e0cd75edc25f51830cdc781468a202c22166279580657670a1e0f",
+      "gitBlob": "1f87ae8b30e4e076fa57e84734b992903225aead"
+    },
+    {
+      "source": "scripts/verify-party-summaries.mjs",
+      "destination": "scripts/verify-party-summaries.mjs",
+      "bytes": 5032,
+      "sha256": "1818d5065a56e039a871353792aa7414f13cc62a3a9c198252ed0385408ac96c",
+      "gitBlob": "5e30c7938973b2b23ecb8c1e96cdbc28dc8f3f1a"
+    },
+    {
+      "source": "scripts/verify-report-sources.mjs",
+      "destination": "scripts/verify-report-sources.mjs",
+      "bytes": 4694,
+      "sha256": "65c24ec42b838fba2de6112af860738d67dc0aaacd72efe0e2b8653277d95b93",
+      "gitBlob": "78a923be7d2fa94fa885030cd52763f1d2f87d18"
+    },
+    {
+      "source": "scripts/verify-french-locale.mjs",
+      "destination": "scripts/verify-french-locale.mjs",
+      "bytes": 2550,
+      "sha256": "a8ecfd2285dbde0607ce9e00a286d118fe599e10dd9ee4acb140f2d022380cae",
+      "gitBlob": "aa44ea2fdfa13e0f21504a6cb167864fbc88f307"
+    },
+    {
+      "source": "scripts/verify-approved-source-navigation.mjs",
+      "destination": "scripts/verify-approved-source-navigation.mjs",
+      "bytes": 6703,
+      "sha256": "c81672bc883ae5390d493fdcf284ce63ef44ad67fa355eea08160bd30c67eaa5",
+      "gitBlob": "eaf1672b1cc80c00c0bf74afa7b974448e1bd5c0"
+    },
+    {
+      "source": "scripts/verify-import-features.mjs",
+      "destination": "scripts/verify-import-features.mjs",
+      "bytes": 4898,
+      "sha256": "04a35d0df204ee7334db961286f15184cbecf53bf59061c56857d5f2749a3912",
+      "gitBlob": "053e4fd6d26137d806ff2f0c2f383ddeec2151d4"
+    },
+    {
+      "source": "assets/fonts/StitchArabic.ttf",
+      "destination": "approved-runtime/assets/StitchArabic.ttf",
+      "bytes": 235924,
+      "sha256": "6f611412270a132bbac838da9259d4c68569b4175f3b3b8fa3fa36a30b56dab9",
+      "gitBlob": "e779068718b9801b809605b2bf3067121cce524c"
+    },
+    {
+      "source": "assets/fonts/StitchArabicBold.ttf",
+      "destination": "approved-runtime/assets/StitchArabicBold.ttf",
+      "bytes": 246992,
+      "sha256": "691e0c891a38637ae6bbdb69700f8042cb0724a137bee615068ffdb92244f61f",
+      "gitBlob": "211ff62d8d1778bff69a1b3a906b2ad1686564bc"
+    },
+    {
+      "source": "assets/fonts/OFL-IBM-Plex.txt",
+      "destination": "approved-runtime/assets/OFL-IBM-Plex.txt",
+      "bytes": 4456,
+      "sha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da",
+      "gitBlob": "c35c4c618fab33da8695177b3a6cefe0810b7b28"
+    }
+  ]
+}

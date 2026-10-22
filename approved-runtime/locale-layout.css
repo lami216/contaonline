@@ -1,0 +1,18 @@
+/* Language follows the original desktop locale contract, with mobile geometry. */
+.phone[dir=ltr],.phone[dir=ltr] :is(.content,.sheet,.sheet-body,.app-head,.nav,.panel,.register-table,.document-lines,.pos-cart-table,.search,.browse-toolbar,.browse-option){direction:ltr}
+.phone[dir=ltr]{font-family:system-ui,-apple-system,'Segoe UI',sans-serif}.phone[dir=ltr] :is(button,input,select,textarea){font-family:inherit}
+.phone[dir=ltr] :is(.app-head,.row,.copy,.section-title,.browse-copy,.browse-select,.browse-option,.stock-actions button,.register-table,.document-lines,.pos-cart-table,.field,.field label,.product-extra summary,.table-party,.table-document,.document-information,.invoice-document,.pos-product,.pos-cart-row,.catalog-item){text-align:start}
+.phone[dir=ltr] :is(.table-number,.list-ordinal,.pos-number){text-align:center}
+.phone[dir=ltr] :is(.end,.document-total>div:last-child){text-align:end}
+.phone[dir=ltr] [data-action=back] svg,.phone[dir=ltr] .document-history>svg,.phone[dir=ltr] .catalog-item>svg:last-child,.phone[dir=ltr] .row>svg:last-child,.phone[dir=ltr] .document-actions [data-action^="source-location:"] svg{transform:scaleX(-1)}
+.phone[dir=ltr] .catalog-open svg,.phone[dir=ltr] .pos-checkout-bar .primary svg,.phone[dir=ltr] [data-action=low]>svg:last-child,.phone[dir=ltr] .pos-party-choice>svg:last-child{transform:scaleX(-1)}
+.phone[dir=ltr] :is(.browse-caret svg){transform:rotate(-90deg)}
+.phone[dir=ltr] .document-lines col:nth-child(1){width:38%!important}.phone[dir=ltr] .document-lines col:nth-child(2){width:17%!important}.phone[dir=ltr] .document-lines col:nth-child(3){width:23%!important}.phone[dir=ltr] .document-lines col:nth-child(4){width:22%!important}
+.phone[dir=ltr] :is(.amount,.table-date,.table-number,.pos-line-price,.pos-line-quantity){direction:ltr}
+.phone[dir=ltr] .app-head h1{font-size:clamp(18px,4.5vw,24px);line-height:1.3}.phone[dir=ltr] .nav button{font-size:10px;line-height:1.4}.phone[dir=ltr] :is(.section-title h2,.browse-copy strong){line-height:1.45}.phone[dir=ltr] .pos-cart-table th{font-size:10px}.phone[dir=ltr] .document-lines th{font-size:10px;white-space:normal;overflow-wrap:normal}
+.locale-switch{display:flex;gap:5px;align-items:center;justify-content:center;border:1px solid var(--edge,var(--line));border-radius:10px;padding:4px;margin:0 0 16px;background:var(--surface);direction:ltr}
+.phone .locale-switch button{min-height:44px;flex:1;padding:7px 11px;border:1px solid transparent;border-radius:7px;font-size:13px;color:var(--muted);background:transparent}.phone .locale-switch button[aria-pressed=true]{color:var(--ink);border-color:var(--brand-edge);background:var(--raised)}
+.licensed-identity{padding:12px;border:1px solid var(--edge);border-radius:11px;background:var(--surface);margin:14px 0 18px}.licensed-identity h2{font-size:13px;margin:0 0 9px;color:var(--section-ink,var(--ink))}.licensed-identity dl{margin:0;display:grid;gap:9px}.licensed-identity dl>div{display:grid;gap:2px}.licensed-identity dt{font-size:11px;color:var(--muted)}.licensed-identity dd{font-size:15px;font-weight:700;margin:0;overflow-wrap:anywhere}.licensed-identity small{display:block;margin-top:12px;color:var(--muted);font-size:11px;line-height:1.7}
+.phone[dir=ltr] .auth-screen{text-align:start}.phone[dir=ltr] .auth-screen h1{font-size:25px}.phone[dir=ltr] .support-intro h3{font-size:14px}.phone[dir=ltr] .support-intro p{font-size:11px;line-height:1.6}
+html[dir=ltr] .barcode-camera-overlay{direction:ltr;text-align:start}
+@media print{html[dir=ltr] #print-root,html[dir=ltr] .export-report{direction:ltr!important;text-align:left!important}html[dir=ltr] #print-root :is(th,td){text-align:left!important}}

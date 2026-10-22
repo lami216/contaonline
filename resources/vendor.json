@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "assets": [
+    {
+      "name": "sql.js",
+      "version": "1.13.0",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/sql.js/-/sql.js-1.13.0.tgz",
+      "npmIntegrity": "sha512-RJbVP1HRDlUUXahJ7VMTcu9Rm1Nzw+EBpoPr94vnbD4LwR715F3CcxE2G2k45PewcaZ57pjetYa+LoSJLAASgA==",
+      "output": "approved-runtime/assets/sql-asm.js",
+      "sha256": "c83beac167ae9c1af075449555b1db68b24b5280d0fc65c1f7ac4d1cd103459d",
+      "licenseFile": "approved-runtime/assets/sql.js-LICENSE"
+    },
+    {
+      "name": "IBM Plex Sans Arabic",
+      "license": "OFL-1.1",
+      "source": "https://github.com/google/fonts/tree/9710da1eacb3be272583c3224dcb70f9da6eadbb/ofl/ibmplexsansarabic",
+      "files": [
+        "approved-runtime/assets/StitchArabic.ttf",
+        "approved-runtime/assets/StitchArabicBold.ttf"
+      ],
+      "licenseFile": "approved-runtime/assets/OFL-IBM-Plex.txt",
+      "provenance": "Transferred from pinned upstream Git blobs; hashes in source-manifest.json."
+    }
+  ]
+}

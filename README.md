@@ -1,5 +1,24 @@
-# contaonline
+# contaonline — الكرنه على الويب
+نسخة ويب مستقلة ومحلية أولًا، مبنية على التطبيق المعتمد من Contamobile.
+الحالة الحالية: المرحلة الأولى (نقل موثق واختبارات وبناء داخلي). التفعيل والإدارة والنسخ السحابي لم تُنفذ بعد، والدفعة ليست إصدارًا إنتاجيًا.
 
-Independent local-first web edition of AlKarna. Implementation and verification are developed on `feat/phase-1-foundation`.
+## التشغيل والتحقق
+يلزم Node.js 24.22.1 (LTS) وnpm 11.19.1. ملف .node-version يثبت الإصدار وpackage-lock.json يثبت التبعيات.
+```sh
+npm ci --ignore-scripts
+npm run check
+npm run build
+```
+check يتحقق من 52 بصمة مصدر، ويجهز SQLite المحلي، ويفحص lint والأنواع، ويشغل اختبارات المصدر الستة واختبارات فشل البصمات/موارد الأوفلاين.
+build يتحقق من 45 مدخل precache وينشئ dist ببيان بصمات؛ بوابته مغلقة عمدًا حتى تنفيذ تفعيل الويب.
+لا يوجد أمر start أو staging عام حاليًا؛ لا تخدم dist أو approved-runtime باستضافة عامة. CI للفحص والبناء فقط.
 
-This initial branch contains no deployed application, customer data, credentials, Android changes, or production configuration.
+## المصدر والنطاق
+المصدر الثابت: feat/approved-seller-app @ 1efb01fc1cd7bc62670510e57c6158734ad4bf05.
+قائمة السماح والبصمات في resources/source-manifest.json؛ أصل موارد SQL والخطوط ورخصها في resources/vendor.json.
+لا Android أو Expo أو مفاتيح أو workflows أو تاريخ Git أصلي في هذا المستودع. الحسابات محلية والتفعيل الأصلي مستقلان عن خدمة الويب الجديدة.
+
+## التسليم المرحلي
+راجع docs/PRODUCT_SPEC.md وdocs/DECISIONS.md وdocs/IMPLEMENTATION_PLAN.md وdocs/TEST_REPORT.md وdocs/HANDOFF.md.
+المستودع عام حاليًا. نوصي بجعله خاصًا لحماية العمل التجاري؛ لا يتغير visibility دون موافقة منفصلة.
+لا أسرار أو بيانات عملاء أو نسخ أعمال في Git. مفاتيح الخدمة وقاعدة الإنتاج والنسخ الخاصة ستكون خارج ملفات الموقع ومجلد الإصدار.

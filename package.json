@@ -1,0 +1,29 @@
+{
+  "name": "contaonline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.22.1 <25"
+  },
+  "packageManager": "npm@11.19.1",
+  "scripts": {
+    "prepare:assets": "node scripts/prepare-assets.mjs",
+    "verify:source": "node scripts/verify-source.mjs",
+    "test:baseline": "node scripts/run-baseline.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "lint": "eslint scripts/*.mjs tests/*.mjs",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run verify:source && npm run prepare:assets && npm run lint && npm run typecheck && npm run test:baseline && npm test",
+    "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "fastify": "5.12.7",
+    "sql.js": "1.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "eslint": "10.13.0",
+    "typescript": "7.0.2"
+  }
+}

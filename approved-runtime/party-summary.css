@@ -1,0 +1,42 @@
+/* Financial summaries are compact account information, separate from record tables. */
+.phone .party-summary{margin-block:10px 16px;min-width:0}
+.phone .party-summary-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.phone .party-summary-heading h2{font-size:13px;line-height:1.6;color:var(--ink)}
+.phone .party-summary-heading small{font-size:10px;white-space:nowrap;color:var(--muted)}
+.phone .party-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1.5px solid var(--edge-strong,var(--line));border-radius:11px;overflow:hidden;background:var(--surface)}
+.phone .party-stat{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:7px;min-width:0;min-height:68px;padding:10px 12px;text-align:start;border:0;border-radius:0;background:none;box-shadow:none;color:var(--ink);position:relative}
+.phone .party-stat:nth-child(2n){border-inline-start:1px solid var(--edge,var(--line))}
+.phone .party-stat:nth-child(n+3){border-top:1px solid var(--edge,var(--line))}
+.phone .party-stat-label{font-size:11px;line-height:1.6;font-weight:600;color:var(--muted)}
+.phone .party-stat .amount{font-size:21px;line-height:1.2;white-space:nowrap;flex-wrap:nowrap;max-width:100%;gap:4px;align-self:flex-start}
+.phone .party-stat .amount.money-wide{font-size:clamp(13px,4vw,17px)}
+.phone .party-stat .amount.money-long{font-size:clamp(11px,3.4vw,15px)}
+.phone .party-stat .currency{font-size:9px;white-space:nowrap}
+.phone .party-stat-count{font:700 21px/1.2 system-ui;font-variant-numeric:tabular-nums;direction:ltr}
+.phone .party-debts .party-summary-grid{border-color:var(--edge-strong,var(--line));gap:8px;padding:7px;background:var(--surface)}
+.phone .party-debts .party-stat{min-height:61px;padding:9px 10px;border:1px solid color-mix(in srgb,var(--green) 42%,var(--edge));border-radius:7px;background:color-mix(in srgb,var(--green) 10%,var(--surface))}
+.phone .party-debts .party-stat:nth-child(2){border-color:color-mix(in srgb,var(--red) 42%,var(--edge));background:color-mix(in srgb,var(--red) 10%,var(--surface))}
+.phone .party-debts .party-stat-label{color:var(--ink)}
+.phone .party-stat:focus-visible{outline:2px solid var(--section-ink);outline-offset:-3px}
+.phone .party-stat:active{opacity:1;background:color-mix(in srgb,var(--section-ink) 13%,var(--surface))}
+.phone .party-account-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.phone .party-account-heading>div{min-width:0}
+.phone .party-account-heading h2{font-size:19px;line-height:1.6;overflow-wrap:anywhere;color:var(--ink)}
+.phone .party-account-heading small{display:block;font-size:11px;line-height:1.8}
+.phone .party-account-heading .icon-btn{border:1.5px solid var(--edge-strong);color:var(--section-ink);background:var(--surface);flex:none}
+.phone .party-account-heading .icon-btn svg{width:20px;height:20px}
+.phone .party-account-heading .party-account-type{color:var(--section-ink);font-weight:700}
+.phone .party-account-metrics .party-summary{margin-block:0 12px}
+.phone .party-metric-source .report-trace-total{border-color:var(--edge-strong)}
+.phone .party-metric-source .report-context-note{margin:8px 0 12px}
+.phone .party-account-history .register-table th:nth-child(1){width:9%}
+.phone .party-account-history .register-table th:nth-child(2){width:30%}
+.phone .party-account-history .register-table th:nth-child(3){width:29%}
+.phone .party-account-history .register-table th:nth-child(4){width:32%}
+.phone .party-account-history .register-table td{padding-inline:5px}
+.phone .party-account-history .amount.money-wide{font-size:clamp(8px,2.4vw,10px)}
+.phone .party-account-history .amount .currency{font-size:8px}
+.phone .party-account-history .party-movement-date{display:inline-flex;align-items:baseline;gap:3px;white-space:nowrap;direction:ltr;font-size:clamp(7px,2.2vw,9px)}
+.phone .party-account-history .party-movement-date small{display:inline;margin:0;font-size:inherit}
+@media(hover:hover){.phone .party-stat:hover{background:color-mix(in srgb,var(--section-ink) 8%,var(--surface))}}
+@media(min-width:660px){.phone .party-history-summary .party-summary-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.phone .party-history-summary .party-stat:nth-child(n+2){border-inline-start:1px solid var(--edge)}.phone .party-history-summary .party-stat:nth-child(n){border-top:0}}

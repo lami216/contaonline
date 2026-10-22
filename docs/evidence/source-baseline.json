@@ -1,0 +1,81 @@
+{
+  "source": {
+    "repository": "lami216/Contamobile",
+    "branch": "feat/approved-seller-app",
+    "sha": "1efb01fc1cd7bc62670510e57c6158734ad4bf05"
+  },
+  "runtime": {
+    "node": "v24.19.0",
+    "python": "3.12.14",
+    "platform": "win32"
+  },
+  "commands": [
+    {
+      "command": "node scripts/verify-feature-domains.mjs",
+      "exitCode": 0,
+      "stdout": "{\"checks\":15,\"status\":\"passed\"}\n",
+      "moduleWarning": true
+    },
+    {
+      "command": "node scripts/verify-party-summaries.mjs",
+      "exitCode": 0,
+      "stdout": "PASS desktop party totals: cash/credit, both party directions, historic profit, returns, void/reversal exclusions, active/archive scope, independent debt directions, cent rounding, immutable state and source reconciliation\nCHECK 10,000 party records summarized in 17 ms\nPASS official desktop import preserves both customer/supplier debt directions\n",
+      "moduleWarning": true
+    },
+    {
+      "command": "node scripts/verify-report-sources.mjs",
+      "exitCode": 0,
+      "stdout": "PASS historical invoice credit vs current party ledger, 75,151 receipt reconciliation, period boundaries, cancelled operations, immutable sources, stored historical cost, signed debts, residual warnings and every report metric drilldown\n",
+      "moduleWarning": false
+    },
+    {
+      "command": "node scripts/verify-french-locale.mjs",
+      "exitCode": 0,
+      "stdout": "PASS French templates, dates, validation, LTR Excel/print, unchanged accounting state and original user names/notes\n",
+      "moduleWarning": true
+    },
+    {
+      "command": "node scripts/verify-approved-source-navigation.mjs",
+      "exitCode": 0,
+      "stdout": "PASS locate and highlight without opening/editing, distant/cancelled rows, workflow sources instead of owners/accounts, tab scoping, centralized cash/deposit, required account choice, preserved drafts, row opens detail and Edit alone opens editor\n",
+      "moduleWarning": true
+    },
+    {
+      "command": "python scripts/prepare-approved-dependencies.py",
+      "exitCode": 0,
+      "stdout": "Verified pinned offline SQLite runtime\r\n"
+    },
+    {
+      "command": "node scripts/verify-import-features.mjs",
+      "exitCode": 0,
+      "stdout": "{\"checks\":20,\"status\":\"passed\",\"formats\":[\"mobile-json\",\"desktop-sqlite\",\"dataacc-db\"]}\n",
+      "moduleWarning": true
+    }
+  ],
+  "precache": {
+    "entries": 45,
+    "dependencyPrepared": "sql.js@1.13.0",
+    "missing": [
+      "./assets/StitchArabic.ttf",
+      "./assets/StitchArabicBold.ttf"
+    ]
+  },
+  "sourceHistoryScan": {
+    "commits": 642,
+    "blobs": 1053,
+    "bytes": 15916656,
+    "matches": 0,
+    "scope": "known credential patterns and signing-key filenames; limited, not comprehensive"
+  },
+  "notExecuted": [
+    "browser-e2e",
+    "iPhone-device",
+    "WebKit",
+    "web-licensing",
+    "backend-concurrency",
+    "cloud-backup-restore",
+    "destination-build",
+    "dependency-audit",
+    "deployment"
+  ]
+}

@@ -1,0 +1,5 @@
+* text=auto eol=lf
+approved-runtime/** -text -whitespace
+scripts/verify-*.mjs -text -whitespace
+*.png binary
+*.ttf binary
