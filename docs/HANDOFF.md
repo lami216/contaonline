@@ -1,29 +1,39 @@
 # contaonline handoff — 2026-10-23
 
-Source: feat/approved-seller-app @ 1efb01fc1cd7bc62670510e57c6158734ad4bf05. Upstream and Android remain read-only. No deployment, VPS/DNS/Nginx changes, merge or visibility change is authorized.
+## Scope and immutable source
 
-Verified remote deliveries:
-- Phase 1: feat/phase-1-foundation, 7a1cc78f0d43cf5aefa03c923f2b201d9105e143; 52 pinned source files, licensed assets, lockfile and baseline. CI success: https://github.com/lami216/contaonline/actions/runs/39873932011
-- PWA batch: feat/phase-2-pwa, ff8c074dd67ba4e04e8f8e52bc5e775baa7d58a6; scoped stores, local export, text/font PDF, gated review server, hashed precache. CI success including 8 Chromium checks and zero detected dependency vulnerabilities: https://github.com/lami216/contaonline/actions/runs/39955617447
+Only contaonline was changed. Source: feat/approved-seller-app @ 1efb01fc1cd7bc62670510e57c6158734ad4bf05. Its 52 imported files remain byte-identical and Git-blob verified; adaptations are explicit in scripts/adapt-web.mjs and web/. Resource origins, licenses and hashes are in resources/. No Android/native activation/source workflow changes, secrets, customer data, merge, visibility change or deployment are included.
 
-Current local branch: feat/phase-3-service. Service accounts, SQLite WAL, sessions/CSRF, administrative MFA/bootstrap/recovery, manual payment and subscription administration, Web Crypto activation and installation policy core are implemented. See SERVICE_REVIEW.md. Eleven local tests plus all six upstream baseline scripts, lint, typecheck and build passed. A real race through two independent SQLite connections produced one period, one writer and one pending request. Real service browser coverage is added to CI; do not assume its result before checking.
+## Reviewable remote batches
 
-The execution environment briefly disconnected then returned with files intact. Remote PWA SHA differs from its local commit because GitHub API was used after git network failed. Never force push. Read the current remote head and use its tree/parent for subsequent delivery; preserve prior remote checkpoint documents.
+| Branch | Remote commit | Successful CI |
+|---|---|---|
+| feat/phase-1-foundation | 7a1cc78f0d43cf5aefa03c923f2b201d9105e143 | https://github.com/lami216/contaonline/actions/runs/39873932011 |
+| feat/phase-2-pwa | ff8c074dd67ba4e04e8f8e52bc5e775baa7d58a6 | https://github.com/lami216/contaonline/actions/runs/39955617447 |
+| feat/phase-3-service | faaaee36882a079e34ec1512866499075c1ae131 | https://github.com/lami216/contaonline/actions/runs/39958265798 |
+| feat/phase-4-hardening | 72ca3dc5268ec257dd855b5ae8c95510436d97bb | https://github.com/lami216/contaonline/actions/runs/39958715881 |
+| feat/phase-5-backups | 25a4e3031224af4e592df317a20af2f6b0c9fdf2 | https://github.com/lami216/contaonline/actions/runs/39960935096 |
 
-Next: verify service CI, then implement optional cloud backup with separate entitlement and explicit consent, atomic local outbox, base/deltas, independent writer generation, durable ACK, tenant isolation, restore preview and clean-install recovery, 30-day retention/download/notice and audited deletion. Local-only mode must never upload accounting content.
+Current cumulative review branch: feat/phase-6-review. Code revision e49400035c42085ded622372b1f7dcccd0995801 passed full CI: https://github.com/lami216/contaonline/actions/runs/39975198178 . Both Chromium and WebKit passed 12 PWA cases plus the complete service/accounting/backup/restore flow; dependency audit found zero vulnerabilities. Subsequent documentation/fixture commits rerun the same gates: inspect the latest branch check, not an older badge. See TEST_REPORT.md and FOLLOWUP_REVIEW.md for actual failures and corrections.
 
-Remaining acceptance: full PWA update races, real storage exhaustion, Arabic PDF visual QA, WebKit and physical iPhone, operating recovery/load measurement and production hardening. Review metadata currently has bounded initial lists; pagination needs work before expanded use. README, architecture/security/test/operations docs need reconciliation as phases finish.
+## Implemented
 
-This is not a complete production application. Readiness remains 503; start rejects NODE_ENV=production. Recommend a private repository without changing visibility. No real customer records, production databases or private issuing keys belong in Git.
+Local-first Arabic/French PWA, scoped IndexedDB, local file/text-font PDF export, complete hashed precache, coordinated multi-tab update, local read/export after permit expiry and defensive clock checks. The source accounting remains unchanged. Offline readiness requires both complete resources and an opened durable shop database; failure preserves prior data.
 
-## Backup batch in progress
-Current branch: feat/phase-5-backups, based on remote installation-hardening 72ca3dc5268ec257dd855b5ae8c95510436d97bb. Phase-3 CI succeeded at https://github.com/lami216/contaonline/actions/runs/39958265798 and phase-4 CI at https://github.com/lami216/contaonline/actions/runs/39958715881 .
-The optional backup contract, private version store, proof-bound dispatch/download, local atomic outbox, foreground scheduling, consent, safe restore and audited retention are now implemented. See BACKUP_REVIEW.md. Nineteen local tests, all six baseline scripts, lint/typecheck/build passed. Browser backup/clean-install recovery coverage is in CI and must not be reported as passed before its result. Next: fix any browser failures, then complete hardening/operations documents, measured recovery and remaining PWA/WebKit/iPhone acceptance. Do not deploy or claim production completion.
+Node 24.22.1/Fastify 5/SQLite WAL service: separate service/local users, administrative MFA and one-use recovery, CSRF/session controls, signed Web Crypto activation, atomic first start and correct renewal dates, manual payments and append-only audit. Customer metadata search/pagination and audited customer/plan editing are tested against 520 synthetic accounts.
 
-## دفعة تقوية ومراجعة المرحلة السادسة
-الفرع feat/phase-6-review مبني على 25a4e3031224af4e592df317a20af2f6b0c9fdf2 ذي CI ناجح. دفعات المصدر والحسابات والتثبيتات والنسخ كلها مرفوعة بسلسلة parents دون merge أو force push.
-22 اختبارًا محليًا وbaseline الستة وlint/typecheck/build نجحت. أضيفت اختبارات تحديث PWA متعدد التبويبات وتراجع الساعة وبيع نقدي/آجل حقيقي أوفلاين مع تحقق الحسابات ثم الاستعادة؛ Chromium/WebKit بوابتا CI لهذه الدفعة. لا تكتب نجاحهما قبل قراءة النتيجة النهائية.
-أرشفة السيرفر المشفرة والتعافي وCLI bootstrap/recovery اختُبرت ببيانات صناعية. عيوب PDF المكتشفة بصريًا عولجت. راجع PHASE6_REVIEW وOPERATIONS وRECOVERY وRELEASE_ACCEPTANCE وTEST_REPORT. الحالة ما تزال مراجعة دون نشر؛ يلزم قبول جهاز iPhone فعلي وقرارات نشر منفصلة، مع الفجوات المسماة في قائمة القبول.
+Installation approval, activity and writer generation are separate. New keys after absent activity can be automatic, recent conflicts await review, old approved keys remain observable without reclaiming upload authority, and repeated proven overlap creates review rather than permanent automatic rejection. Already enrolled activity/upload proofs survive short service-session expiry without minting permits or extending terms. Content authority is rechecked inside transactions.
 
-## Follow-up after first phase-6 CI
-The first phase-6 run (39965008741) passed ten Chromium PWA scenarios, then failed because a POS test selector matched two buttons; WebKit was skipped, not passed. The selector is corrected. Server-side customer pagination/search and audited customer/plan edits are implemented and tested against 520 synthetic accounts. A separate two-connection upload/writer-transfer race passed. Known-key status/backup proofs now remain independent of an expired short service session, without minting a permit/session/extension. See FOLLOWUP_REVIEW.md. Local check: 24 tests, all six baselines, lint/types/build pass. Final follow-up CI is still required.
+Optional separately entitled backups: explicit consent, atomic local snapshot/delta outbox, idempotent durable ACK, private checksummed versions/quota, writer isolation, preview/confirmation/safety restore with original local authentication, independent expiry, 30-day authorized download grace, notice and audited retention CLI. Encrypted server archive/recovery has synthetic roundtrip/tamper/overwrite tests. No off-server destination or scheduler was installed.
+
+## Verification and operating boundary
+
+Latest local full check: 24 tests, 0 failures/skips, six upstream baseline scripts, 52 source fingerprints, lint, types and build. Two independent SQLite-connection tests cover first activation and simultaneous upload/writer transfer. PDF samples were regenerated and all six Arabic/French pages visually inspected with Poppler. Measurements are explicitly synthetic in docs/evidence/MEASUREMENTS.json, not a capacity promise.
+
+Read RELEASE_ACCEPTANCE.md before claiming completion. Physical iPhone/home-screen/offline/share/printing acceptance (IPHONE_ACCEPTANCE.md), broader end-user accounting UI acceptance and real disk/process/network stress remain open. A browser pass cannot replace these gates. Review readiness remains 503, the server binds loopback with a private gate on every route and refuses NODE_ENV=production. No staging endpoint was published. Recommend making the repository private; do not change visibility without separate approval.
+
+## Continuing safely
+
+Use OPERATIONS.md for pinned install, private bootstrap/MFA, migrations, review startup, retention and encrypted archive recovery. Keep issuing/private/MFA/archive keys and databases out of Git/public. Do not copy a live SQLite main file while ignoring WAL or clear local data on migration/quota failure.
+
+Git CLI network access failed in this environment; remote commits were created through the GitHub API while preserving the current remote tree and parent. Local commit IDs therefore differ. Continue from the actual remote head, never force-push local history. Remaining deployment work requires a separately approved target, TLS/proxy/service-user configuration, rollback and acceptance evidence; do not touch VPS/DNS/Nginx now.
