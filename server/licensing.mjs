@@ -128,6 +128,7 @@ export class Licensing {
   }
   /** @param {{account_id:string}} session @param {string} licenseId @param {string} installationId @param {number} generation @param {number} now */
   authorizeUpload(session,licenseId,installationId,generation,now=Date.now()){
+    const account=this.store.get('SELECT disabled,role FROM accounts WHERE id=?',session.account_id);requireValue(account&&!account.disabled&&account.role==='customer','Account authority unavailable',403);
     const l=this.store.scope(licenseId,session.account_id),i=this.store.get('SELECT * FROM installations WHERE id=? AND account_id=?',installationId,session.account_id);
     // Upload authority is independent of app expiry; callers must check the separate backup entitlement.
     requireValue(l&&i&&i.license_id===l.id&&i.status==='approved'&&l.status==='approved'&&l.writer_id===i.id&&l.generation===generation,'Writer authority unavailable',403);

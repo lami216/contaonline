@@ -113,7 +113,7 @@ export async function registerServiceApi(app,{store,licensing,encryptionKey,back
       else if(b.operation==='upload'){const stream=store.get('SELECT * FROM backup_streams WHERE id=? AND account_id=?',b.payload.streamId,s.account_id);requireValue(stream&&stream.app_license_id===proof.license_id&&stream.installation_id===proof.installation_id,'Backup installation mismatch',403);}
       else{const version=store.get('SELECT v.id,s.app_license_id FROM backup_versions v JOIN backup_streams s ON s.id=v.stream_id WHERE v.id=? AND v.account_id=?',b.payload.versionId,s.account_id),license=store.scope(proof.license_id,s.account_id);requireValue(version&&version.app_license_id===proof.license_id&&license.writer_id===proof.installation_id,'Approved installation required to download backup content',403);}
       store.atomic(()=>licensing.consume(proof,s,now()));
-      try{return b.operation==='open'?backups.openStream(s,b.payload,now()):b.operation==='upload'?backups.receive(s,b.payload,now()):backups.download(s,b.payload.versionId,now());}
+      try{return b.operation==='open'?backups.openStream(s,b.payload,now()):b.operation==='upload'?backups.receive(s,b.payload,now()):backups.download({...s,installation_id:proof.installation_id},b.payload.versionId,now());}
       catch(error){try{store.audit(s.account_id,'backup.failure',s.account_id,'Authorized backup request failed','',{operation:b.operation,requestId:request.id},now());}catch{}throw error;}
     });
   }

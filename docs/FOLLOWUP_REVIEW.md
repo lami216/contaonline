@@ -11,3 +11,5 @@ This does not extend a subscription or signed permit, relax unknown/pending inst
 Additional real race: backup upload and administrative writer transfer run concurrently on separate SQLite connections. If an old upload wins, its audit ACK precedes the transfer; once the new generation is approved and creates its reviewed stream, the old generation cannot overwrite it. This is distinct from the first-activation race.
 
 Local full check currently passes 24 tests plus all six source baselines, lint/types/build. CI result must be read at the final follow-up revision. Production, physical-device acceptance and real stress/operating limits remain explicit in RELEASE_ACCEPTANCE.md.
+
+Rechecked backup content download authority under the SQLite lock, including current installation status/account status and writer ownership, so revocation between challenge issuance and dispatch cannot race the content response. Upload authority also rechecks account status under its transaction. The POS regression now follows the product picker's own closing transition rather than racing a disappearing Close button. Full browser gates rerun after this correction.

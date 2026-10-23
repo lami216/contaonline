@@ -32,6 +32,7 @@ export class Backups {
   consent(session,{shopId,backupLicenseId,enabled,policyVersion},now=Date.now()){
     requireValue(session.role==='customer'&&policyVersion===1&&typeof enabled==='boolean','Explicit backup consent required',403);
     return this.store.atomic(()=>{
+      requireValue(this.store.get('SELECT id FROM accounts WHERE id=? AND role=? AND disabled=0',session.account_id,'customer'),'Account authority unavailable',403);
       const l=this.store.scope(backupLicenseId,session.account_id);requireValue(l&&l.kind==='backup'&&l.shop_id===shopId&&l.status==='approved'&&(l.starts_at===null||l.starts_at<=now)&&(l.ends_at===null||l.ends_at>now),'Backup subscription unavailable',403);
       if(enabled&&l.starts_at===null)this.store.run('UPDATE licenses SET starts_at=?,ends_at=?+duration_ms WHERE id=?',now,now,l.id);
       this.store.run('INSERT INTO backup_consents VALUES(?,?,?,?,1,?,NULL) ON CONFLICT(shop_id) DO UPDATE SET backup_license_id=excluded.backup_license_id,enabled=excluded.enabled,policy_version=1,consented_at=excluded.consented_at,notice_at=NULL',shopId,session.account_id,l.id,Number(enabled),now);
@@ -90,9 +91,14 @@ export class Backups {
   versions(session,shopId,now=Date.now()){
     const entitlement=this.entitlement(session,shopId,true,now);return {deleteAfter:entitlement.ends_at+30*DAY,retentionDays:30,warning:now>=entitlement.ends_at,versions:this.store.all('SELECT id,sequence,checksum,bytes,created_at,status FROM backup_versions WHERE shop_id=? AND account_id=? AND status=? ORDER BY created_at DESC,rowid DESC LIMIT 100',shopId,session.account_id,'ready')};
   }
-  /** @param {{account_id:string,role:string}} session @param {string} versionId @param {number} now */
+  /** @param {{account_id:string,role:string,installation_id:string}} session @param {string} versionId @param {number} now */
   download(session,versionId,now=Date.now()){
-    const version=this.store.get('SELECT * FROM backup_versions WHERE id=? AND account_id=? AND status=?',versionId,session.account_id,'ready');requireValue(version,'Unavailable backup',404);this.entitlement(session,version.shop_id,true,now);const snapshot=this.read(version);this.store.audit(session.account_id,'backup.download',versionId,'Authorized user backup download','',{},now);return {snapshot,checksum:version.checksum,createdAt:version.created_at};
+    return this.store.atomic(()=>{
+      const version=this.store.get('SELECT * FROM backup_versions WHERE id=? AND account_id=? AND status=?',versionId,session.account_id,'ready');requireValue(version,'Unavailable backup',404);
+      const stream=this.store.get('SELECT app_license_id FROM backup_streams WHERE id=?',version.stream_id),license=this.store.scope(stream.app_license_id,session.account_id),installation=this.store.get('SELECT * FROM installations WHERE id=? AND account_id=?',session.installation_id,session.account_id),account=this.store.get('SELECT disabled FROM accounts WHERE id=?',session.account_id);
+      requireValue(account&&!account.disabled&&license.status==='approved'&&installation?.status==='approved'&&installation.license_id===license.id&&license.writer_id===installation.id,'Approved current installation required for content',403);
+      this.entitlement(session,version.shop_id,true,now);const snapshot=this.read(version);this.store.audit(session.account_id,'backup.download',versionId,'Authorized user backup download','',{},now);return {snapshot,checksum:version.checksum,createdAt:version.created_at};
+    });
   }
   /** @param {{dryRun?:boolean,now?:number}} options */
   prune({dryRun=true,now=Date.now()}={}){
