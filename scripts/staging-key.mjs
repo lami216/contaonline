@@ -1,0 +1,10 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import { randomBytes } from 'node:crypto';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const root=fileURLToPath(new URL('../',import.meta.url));
+const destination=path.resolve(process.argv[2]||path.join(root,'private/staging-access.json'));
+if(destination.startsWith(path.join(root,'dist')+path.sep)||destination.startsWith(path.join(root,'approved-runtime')+path.sep)||destination.startsWith(path.join(root,'web')+path.sep))throw Error('Keep the staging key outside application assets');
+await mkdir(path.dirname(destination),{recursive:true,mode:0o700});
+await writeFile(destination,JSON.stringify({username:'review',secret:randomBytes(32).toString('base64url')})+'\n',{mode:0o600,flag:'wx'});
+console.log('Private access file created: '+destination);

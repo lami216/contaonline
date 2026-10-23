@@ -1,5 +1,5 @@
 export default [{
-  files: ['scripts/*.mjs', 'tests/*.mjs'],
+  files: ['scripts/*.mjs', 'tests/*.mjs', 'server/*.mjs', 'shared/*.mjs', 'web/*.js', 'e2e/*.mjs'],
   ignores: ['scripts/verify-feature-domains.mjs', 'scripts/verify-party-summaries.mjs', 'scripts/verify-report-sources.mjs', 'scripts/verify-french-locale.mjs', 'scripts/verify-approved-source-navigation.mjs', 'scripts/verify-import-features.mjs'],
   languageOptions: { ecmaVersion: 'latest', sourceType: 'module' },
   rules: {

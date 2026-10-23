@@ -17,6 +17,8 @@
     "scripts/prepare-assets.mjs",
     "scripts/verify-source.mjs",
     "scripts/run-baseline.mjs",
-    "tests/*.test.mjs"
+    "tests/*.test.mjs",
+    "scripts/adapt-web.mjs",
+    "server/*.mjs"
   ]
 }

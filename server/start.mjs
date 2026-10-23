@@ -1,0 +1,10 @@
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { createApp, stagingDigest } from './app.mjs';
+if(process.env.NODE_ENV==='production')throw Error('This phase is not approved for production deployment');
+if(!process.env.STAGING_ACCESS_KEY_FILE)throw Error('Set STAGING_ACCESS_KEY_FILE to a private key file');
+const credentials=JSON.parse(await readFile(process.env.STAGING_ACCESS_KEY_FILE,'utf8'));
+const app=await createApp({distDirectory:fileURLToPath(new URL('../dist',import.meta.url)),stagingHash:stagingDigest(credentials.username,credentials.secret)});
+await app.listen({host:'127.0.0.1',port:Number(process.env.PORT||4318)});
+console.log('Private local review is listening on loopback');
+for(const signal of ['SIGTERM','SIGINT'])process.on(signal,()=>app.close().then(()=>process.exit(0)));
