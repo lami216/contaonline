@@ -23,3 +23,5 @@ The cancelled run 39969464836 stalled on the hosted runner's azure.archive.ubunt
 Run 39971522820 exposed a real boot-order regression in the new readiness tracking: the runtime object was initialized after top-level awaited boot. Its initialization now precedes boot, so both success and failure can record storage state. Local full checks pass; the existing browser activation/storage tests remain mandatory.
 
 Run 39972195586 passed all 12 Chromium PWA checks. The service test reloaded immediately after observing a durable sale, before the UI action's finally block had cleared its saved draft. It now waits for the action to finish before reopening, matching the app's saved/not-busy boundary. Stock/cash/debt/profit and recovery assertions are unchanged.
+
+The next run (39972644962) reached the credit-sale payment dialog, then selected the party control behind its overlay. The test now scopes this action to the visible payment sheet rather than choosing the first matching page control; no forced click or weakened accounting assertion is used.
