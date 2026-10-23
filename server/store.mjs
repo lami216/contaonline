@@ -66,6 +66,7 @@ export class ServiceStore {
       requireValue(this.get('SELECT id FROM shops WHERE id=?',shopId),'Unknown shop');
       requireValue(typeof paymentReference==='string'&&paymentReference.trim().length>0,'Manual payment reference required');
       requireValue(explicitStart===null||Number.isSafeInteger(explicitStart)&&explicitStart>=0,'Invalid start date');
+      requireValue(explicitStart===null||Number.isSafeInteger(explicitStart+plan.duration_ms),'Subscription date exceeds supported range');
       const id=randomUUID();this.run('INSERT INTO licenses(id,shop_id,plan_id,kind,status,duration_ms,offline_ms,starts_at,ends_at) VALUES(?,?,?,?,?,?,?,?,?)',id,shopId,planId,plan.kind,'approved',plan.duration_ms,plan.offline_ms,explicitStart,explicitStart===null?null:explicitStart+plan.duration_ms);
       this.audit(actor,'license.issue',id,reason,paymentReference,{planId,explicitStart},now);return this.get('SELECT * FROM licenses WHERE id=?',id);
     });
@@ -76,6 +77,7 @@ export class ServiceStore {
     requireValue(typeof paymentReference==='string'&&paymentReference.trim().length>0,'Manual payment reference required');
     return this.atomic(()=>{
       const license=this.get('SELECT * FROM licenses WHERE id=?',licenseId);requireValue(license,'Unknown license');
+      requireValue(Number.isSafeInteger((license.starts_at===null?license.duration_ms:Math.max(license.ends_at,now))+durationMs),'Renewal exceeds supported range');
       if(license.starts_at===null)this.run('UPDATE licenses SET duration_ms=duration_ms+? WHERE id=?',durationMs,licenseId);
       else this.run('UPDATE licenses SET ends_at=? WHERE id=?',Math.max(license.ends_at,now)+durationMs,licenseId);
       this.audit(actor,'license.renew',licenseId,reason,paymentReference,{durationMs,previousEnd:license.ends_at},now);return this.get('SELECT * FROM licenses WHERE id=?',licenseId);

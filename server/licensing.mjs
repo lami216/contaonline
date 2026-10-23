@@ -18,7 +18,7 @@ export class Licensing {
     await crypto.subtle.importKey('jwk',publicJwk,{name:'ECDSA',namedCurve:'P-256'},false,['verify']);
     const existing=this.store.get('SELECT * FROM installations WHERE id=?',installationId),fp=await fingerprint(publicJwk);
     requireValue(!existing||existing.account_id===session.account_id&&existing.license_id===licenseId&&existing.fingerprint===fp,'Unavailable installation',403);
-    if(purpose==='activate')requireValue(license.kind==='app'&&license.status==='approved'&&(license.ends_at===null||license.ends_at>now),'License not active',403);
+    if(purpose==='activate')requireValue(license.kind==='app'&&license.status==='approved'&&(license.starts_at===null||license.starts_at<=now)&&(license.ends_at===null||license.ends_at>now),'License not active',403);
     else requireValue(existing&&existing.status==='approved','Installation observation unavailable',403);
     this.store.atomic(()=>this.store.limit('challenge:'+session.account_id,30,60000,now));
     const id=randomUUID(),message=canonical({id,nonce:token(),session:session.token_hash,account:session.account_id,licenseId,installationId,purpose,expiresAt:now+120000});
@@ -52,7 +52,7 @@ export class Licensing {
     const proof=await this.prove(session,input,'activate',now);
     return this.store.atomic(()=>{
       this.consume(proof,session,now);
-      let license=this.store.scope(proof.license_id,session.account_id);requireValue(license&&license.kind==='app'&&license.status==='approved'&&(license.ends_at===null||license.ends_at>now),'License not active',403);
+      let license=this.store.scope(proof.license_id,session.account_id);requireValue(license&&license.kind==='app'&&license.status==='approved'&&(license.starts_at===null||license.starts_at<=now)&&(license.ends_at===null||license.ends_at>now),'License not active',403);
       let installation=this.store.get('SELECT * FROM installations WHERE id=?',proof.installation_id);
       requireValue(!installation||installation.account_id===session.account_id&&installation.license_id===license.id&&installation.fingerprint===proof.fingerprint,'Unavailable installation',403);
       requireValue(!installation||!['rejected','suspended','revoked'].includes(installation.status),'Installation requires administrative review',403);

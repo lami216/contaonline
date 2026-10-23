@@ -70,6 +70,38 @@ test('renewal accumulates from live end, expired renewal from administrative app
     assert.throws(()=>f.store.renew('admin',{licenseId:old.id,durationMs:1,reason:'',paymentReference:'p'}));assert.throws(()=>f.store.renew('admin',{licenseId:old.id,durationMs:1,reason:'valid reason',paymentReference:''}));
   }finally{await f.close();}
 });
+test('known superseded return remains observable without automatically reclaiming writer authority or a fresh permit',async()=>{
+  const f=await fixture();try{const old=await identity(f),current=await identity(f);await f.licensing.enroll(f.session,await proof(f,old,f.now),f.now);const later=f.now+600001;await f.licensing.enroll(f.session,await proof(f,current,later),later);
+    const returned=await f.licensing.enroll(f.session,await proof(f,old,later+600001),later+600001);assert.deepEqual(returned,{pending:true,superseded:true});
+    const observed=await f.licensing.heartbeat(f.session,await proof(f,old,later+600002,'presence'),later+600002);assert.equal(observed.overlap,false);assert.equal(observed.writer,false);assert.equal(f.store.get('SELECT writer_id FROM licenses WHERE id=?',f.license.id).writer_id,current.id);
+  }finally{await f.close();}
+});
+test('activation rejects wrong account, mismatched key, wrong purpose, expired nonce and explicitly future subscription',async()=>{
+  const f=await fixture();try{const i=await identity(f),j=await identity(f),input=await proof(f,i,f.now);
+    await assert.rejects(f.licensing.enroll({...f.session,account_id:'customer-B'},input,f.now),/unavailable/);
+    const bad={...input,signature:base64url(await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},j.privateKey,new TextEncoder().encode(f.store.get('SELECT message FROM challenges WHERE id=?',input.challengeId).message)))};await assert.rejects(f.licensing.enroll(f.session,bad,f.now),/proof/);
+    await assert.rejects(f.licensing.enroll(f.session,input,f.now+120001),/expired/);
+    await f.licensing.enroll(f.session,input,f.now);
+    const presence=await proof(f,i,f.now+1,'presence');await assert.rejects(f.licensing.enroll(f.session,presence,f.now+1),/unavailable/);
+    f.store.run('INSERT INTO accounts(id,username,password_hash,role,created_at) VALUES(?,?,?,?,?)','customer-B','fixture-B','fixture','customer',f.now);
+    await assert.rejects(f.licensing.challenge({...f.session,account_id:'customer-B'},{licenseId:f.license.id,installationId:i.id,publicJwk:i.publicJwk},f.now),/Unavailable license/);
+    f.store.run('UPDATE licenses SET starts_at=?,ends_at=? WHERE id=?',f.now+1000000,f.now+2000000,f.license.id);await assert.rejects(proof(f,j,f.now),/not active/);
+  }finally{await f.close();}
+});
+test('new installation after absence is automatic, but successful writer switches are rate limited without extending dates',async()=>{
+  const f=await fixture();try{let end;
+    for(let n=0;n<3;n++){const i=await identity(f),time=f.now+n*600001,result=await f.licensing.enroll(f.session,await proof(f,i,time),time);end??=result.permit?.payload.expiresAt;assert.equal(result.permit?.payload.expiresAt,end);}
+    const fourth=await identity(f),time=f.now+3*600001;await assert.rejects(f.licensing.enroll(f.session,await proof(f,fourth,time),time),/Too many/);assert.equal(f.store.get('SELECT generation,ends_at FROM licenses WHERE id=?',f.license.id).generation,3);assert.equal(f.store.get('SELECT ends_at FROM licenses WHERE id=?',f.license.id).ends_at,end);
+  }finally{await f.close();}
+});
+test('administrative suspension/revocation is audited; resuming preserves observation and does not transfer writer',async()=>{
+  const f=await fixture();try{const i=await identity(f);await f.licensing.enroll(f.session,await proof(f,i,f.now),f.now);
+    assert.throws(()=>f.licensing.moderate('admin',{installationId:i.id,action:'suspend',reason:''}),/reason/);assert.equal(f.store.get('SELECT status FROM installations WHERE id=?',i.id).status,'approved');
+    f.licensing.moderate('admin',{installationId:i.id,action:'suspend',reason:'Fixture suspension'});await assert.rejects(proof(f,i,f.now+1,'presence'),/unavailable/);
+    f.licensing.moderate('admin',{installationId:i.id,action:'resume',reason:'Fixture resumption'});assert.equal(f.store.get('SELECT generation FROM licenses WHERE id=?',f.license.id).generation,1);
+    f.licensing.moderate('admin',{installationId:i.id,action:'revoke',reason:'Fixture revocation'});await assert.rejects(proof(f,i,f.now+2,'presence'),/unavailable/);assert.equal(f.store.all('SELECT * FROM audit WHERE action LIKE ?', 'installation.%').length,4);
+  }finally{await f.close();}
+});
 test('two independent SQLite connections race at first activation: one period, one writer and one pending request',async()=>{
   const f=await fixture();try{
     const first=await identity(f),second=await identity(f),inputs=await Promise.all([proof(f,first,f.now),proof(f,second,f.now)]),barrier=new SharedArrayBuffer(4);
