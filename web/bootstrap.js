@@ -56,6 +56,7 @@ async function bootShop(active){
   await import('./app.js');
   startCloud();
   await refreshOfflineStatus();
+  connectedPresence();
   if(!canWrite())notice(t('وضع العرض والتصدير فقط؛ بيانات المحل محفوظة.','Mode lecture et export ; les données restent conservées.'));
 }
 function renderGate(error=''){
@@ -94,7 +95,7 @@ async function chooseLicense(licenses){
     dialog.addEventListener('cancel',()=>resolve(null));dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();
   });
 }
-globalThis.ContaoPwa={notice};
+globalThis.ContaoPwa={notice,prepare:preparePwa};
 async function connectedPresence(){
   if(connecting||!activation||!navigator.onLine||document.visibilityState!=='visible')return;
   connecting=true;
@@ -105,8 +106,10 @@ async function connectedPresence(){
     if(status.accountStatus==='disabled'||status.licenseStatus!=='approved'||status.installationStatus!=='approved'){
       activation.record.restriction='server-restriction';await writeService('permit:'+activation.identity.accountId,activation.record);await refreshOfflineStatus();return;
     }
+    if(activation.record.restriction==='server-restriction')activation.record.restriction=null;
     activation.record.maxWallMs=Math.max(activation.record.maxWallMs||0,status.serverTime);activation.record.clockOffsetMs=status.serverTime-Date.now();activation.record.lastClientWallMs=Date.now();await writeService('permit:'+activation.identity.accountId,activation.record);
     const result=status;
+    if(!result.writer&&canWrite())notice(t('هذا التثبيت يبقى مسجلًا، لكنه ليس الكاتب المعتمد للنسخ. بياناتك المحلية محفوظة، ولا تُدمج تلقائيًا.','Cette installation reste connue, sans autorité d’envoi. Les données locales sont conservées et ne sont pas fusionnées automatiquement.'));
     if(result.reviewRequired)notice(t('رُصد نشاط متداخل يحتاج مراجعة. رفع النسخ معلق؛ بياناتك المحلية محفوظة.','Activité simultanée à vérifier. Envoi des sauvegardes suspendu ; données locales conservées.'));
   }catch{/* Network/session failure never resets the local subscription or deletes data. */}finally{connecting=false;}
 }

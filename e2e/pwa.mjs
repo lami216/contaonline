@@ -10,8 +10,11 @@ import { base64url, fingerprint, permitMessage } from '../shared/permit.mjs';
 const issuer=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
 const keys={fixture:await crypto.subtle.exportKey('jwk',issuer.publicKey)};
 const username='fixture-review',password=randomBytes(32).toString('base64url');
-const workerBody=await readFile(new URL('../dist/app/sw.js',import.meta.url),'utf8');let workerRevision=1;
-const app=await createApp({distDirectory:fileURLToPath(new URL('../dist',import.meta.url)),stagingHash:stagingDigest(username,password),registerApi:async app=>{app.get('/app/sw.js',async(_,reply)=>reply.type('text/javascript').header('service-worker-allowed','/app/').send(workerBody.replace(/const VERSION="[^"]+";/,'const VERSION="browser-update-fixture-'+workerRevision+'";')));}});
+const workerBody=await readFile(new URL('../dist/app/sw.js',import.meta.url),'utf8'),boldFont=await readFile(new URL('../dist/app/assets/StitchArabicBold.ttf',import.meta.url));let workerRevision=1,failPrecache=false;
+const app=await createApp({distDirectory:fileURLToPath(new URL('../dist',import.meta.url)),stagingHash:stagingDigest(username,password),registerApi:async app=>{
+  app.get('/app/sw.js',async(_,reply)=>reply.type('text/javascript').header('service-worker-allowed','/app/').send(workerBody.replace(/const VERSION="[^"]+";/,'const VERSION="browser-update-fixture-'+workerRevision+'";')));
+  app.get('/app/assets/StitchArabicBold.ttf',async(_,reply)=>failPrecache?reply.code(503).send('Synthetic missing precache resource'):reply.type('font/ttf').send(boldFont));
+}});
 const base=await app.listen({host:'127.0.0.1',port:0});
 const browserType=process.env.BROWSER_ENGINE==='webkit'?webkit:chromium;
 const browser=await browserType.launch({headless:true,...(process.env.CHROME_EXECUTABLE&&browserType===chromium?{executablePath:process.env.CHROME_EXECUTABLE}:{})});
@@ -27,7 +30,7 @@ async function seed(page,account='fixture-account',shop='fixture-shop',expired=f
 try{
   const context=await browser.newContext({httpCredentials:{username,password},viewport:{width:393,height:852}});
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
-  const uploads=[];page.on('request',r=>{if(r.method()!=='GET')uploads.push(r.url());});
+  const uploads=[];page.on('request',r=>{if(r.method()==='GET')return;const data=r.postData()||'';if(r.url().includes('/api/export')||r.url().includes('/api/backup/dispatch')||/"(?:state|records|products|users)"\s*:/.test(data))uploads.push(r.url());});
   await page.goto(base+'/app/');await page.locator('#service-login').waitFor();
   assert.equal(await page.locator('[data-action="site:setup"]').count(),0);
   await page.evaluate(()=>location.hash='go:sale');assert.equal(await page.locator('#service-login').count(),1);
@@ -80,5 +83,11 @@ try{
   assert.deepEqual(expired,{canWrite:false,rejected:true,hasData:true});pass('expired permit keeps local data and blocks durable accounting writes');
   const scope=await page.evaluate(async()=>{const s=await import('/app/service-store.js');const identities=await Promise.all([s.identityFor('other-account'),s.identityFor('other-account')]);return {same:identities[0].id===identities[1].id,extractable:identities[0].privateKey.extractable};});
   assert.deepEqual(scope,{same:true,extractable:false});assert.deepEqual(errors,[]);pass('concurrent tabs share one nonextractable installation identity without browser errors');
-  await context.close();console.log(JSON.stringify({browser:browserType.name(),checks:count,physicalIphone:false}));
+  await context.close();failPrecache=true;
+  const broken=await browser.newContext({httpCredentials:{username,password}}),brokenPage=await broken.newPage();await brokenPage.goto(base+'/');
+  const failedInstall=await brokenPage.evaluate(async()=>{
+    let result;try{const registration=await navigator.serviceWorker.register('/app/sw.js',{scope:'/app/',updateViaCache:'none'}),worker=registration.installing||registration.waiting||registration.active;if(!worker)result='no-worker';else result=await new Promise((resolve,reject)=>{const check=()=>{if(['redundant','activated'].includes(worker.state)){clearTimeout(timeout);resolve(worker.state);}};const timeout=setTimeout(()=>reject(Error('Precache test timed out')),10000);worker.addEventListener('statechange',check);check();});}catch{result='registration-error';}
+    return {result,controller:!!navigator.serviceWorker.controller,cacheNames:await caches.keys()};
+  });assert.notEqual(failedInstall.result,'activated');assert.equal(failedInstall.controller,false);assert.equal(failedInstall.cacheNames.filter(name=>name.startsWith('contaonline-app-')).length,0);await broken.close();pass('a failed required precache resource rejects installation and removes the incomplete cache');
+  console.log(JSON.stringify({browser:browserType.name(),checks:count,physicalIphone:false}));
 }finally{await browser.close();await app.close();}
