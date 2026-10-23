@@ -14,15 +14,15 @@ export async function syncCloud(force=false){
     db=await new WebShopDatabase().open();const status=await cloudStatus(db);if(!status.config?.enabled||status.config.requiresReview)return;
     if(!force&&!status.config.batchInProgress&&status.ack&&Date.now()-status.ack.at<(status.config.cadenceMs||86400000))return;
     const rows=(await allOutbox(db)).filter(row=>row.streamId===status.config.streamId);if(!rows.length)return;
-    lastAttempt=Date.now();const events=[];let bytes=0;
+    lastAttempt=Date.now();await db.put('meta',{id:'cloud-attempt',value:{at:lastAttempt,error:null}});const events=[];let bytes=0;
     for(const row of rows.slice(0,50)){const size=new TextEncoder().encode(JSON.stringify(row.event)).length;if(size>9*1024*1024)throw Error(t('التغيير أكبر من حد الرفع. احتفظ بنسخة محلية وتواصل مع الدعم.','Modification trop volumineuse. Conservez une sauvegarde locale.'));if(bytes+size>9*1024*1024)break;events.push(row.event);bytes+=size;}
     await db.put('meta',{id:'cloud-config',value:{...status.config,batchInProgress:true}});
     const result=await globalThis.ContaoService.backupRequest('upload',{streamId:status.config.streamId,events});
     if(!result.durable||!Number.isSafeInteger(result.cursor)||result.cursor<events.at(-1).sequence)throw Error('Incomplete server acknowledgement');
     await acknowledgeCloud(db,status.config.streamId,result.cursor,result.versionId);await db.put('meta',{id:'cloud-config',value:{...status.config,batchInProgress:rows.length>events.length}});lastError='';failures=0;nextAttempt=Date.now()+1000;
-  }catch(error){lastError=error.message;failures++;nextAttempt=Date.now()+Math.min(300000,5000*2**Math.min(failures,6))+Math.random()*1000;}finally{db?.db.close();running=false;}
+  }catch(error){lastError=error.message;failures++;nextAttempt=Date.now()+Math.min(300000,5000*2**Math.min(failures,6))+Math.random()*1000;try{await db?.put('meta',{id:'cloud-attempt',value:{at:lastAttempt||Date.now(),error:String(lastError).slice(0,500),nextAttempt}});}catch{}}finally{db?.db.close();running=false;}
 }
-export function startCloud(){globalThis.ContaoBackup={isBusy:()=>running};setInterval(()=>syncCloud(),60000);addEventListener('online',()=>syncCloud());document.addEventListener('visibilitychange',()=>syncCloud());setTimeout(()=>syncCloud(),3000);}
+export function startCloud(){globalThis.ContaoBackup={isBusy:()=>running||!!dialog?.open};setInterval(()=>syncCloud(),60000);addEventListener('online',()=>syncCloud());document.addEventListener('visibilitychange',()=>syncCloud());setTimeout(()=>syncCloud(),3000);}
 export async function openBackupPanel(){
   if(!globalThis.ContaoRuntime?.backupAllowed())throw Error(t('تحتاج صلاحية النسخ وحسابًا محليًا مفتوحًا.','Une session locale autorisée est requise.'));
   dialog?.remove();dialog=el('dialog');dialog.className='web-file-dialog';const title=el('h2',t('النسخ السحابي الاختياري','Sauvegarde en ligne facultative')),message=el('p');message.setAttribute('role','status');dialog.append(title,message);
@@ -31,7 +31,7 @@ export async function openBackupPanel(){
   try{
     db=await new WebShopDatabase().open();const scope=globalThis.ContaoService.scope,local=await cloudStatus(db);
     const stateLabel=el('p',t('تغييرات منتظرة: ','Modifications en attente : ')+local.pending+' · '+t('آخر حفظ مؤكد: ','Dernier envoi confirmé : ')+(local.ack?new Date(local.ack.at).toLocaleString():t('لم يتم بعد','Aucun')));dialog.prepend(stateLabel);
-    if(lastAttempt)dialog.append(el('p',t('آخر محاولة: ','Dernière tentative : ')+new Date(lastAttempt).toLocaleString()));if(lastError)dialog.append(el('p',lastError));
+    if(lastAttempt||local.attempt?.at)dialog.append(el('p',t('آخر محاولة: ','Dernière tentative : ')+new Date(lastAttempt||local.attempt.at).toLocaleString()));if(lastError||local.attempt?.error)dialog.append(el('p',lastError||local.attempt.error));
     const sync=el('button',t('مزامنة الآن','Envoyer maintenant'));sync.onclick=async()=>{sync.disabled=true;await syncCloud(true);message.textContent=lastError||t('اكتملت المحاولة؛ التغييرات تحذف من الطابور فقط بعد تأكيد حفظها.','Tentative terminée ; la file est retirée uniquement après confirmation.');sync.disabled=false;};dialog.append(sync);
     const remote=await api('status',{appLicenseId:scope.licenseId});
     const notice=el('p',t('الرفع اختياري، ويشمل بيانات المحل ومستخدميه المحليين. يحتاج اشتراك نسخ مستقلًا. بعد انتهاء خدمة النسخ، تبقى النسخ قابلة للتنزيل للمخول لمدة 30 يومًا، ثم تحذف بمهمة مجدولة مع تنبيه في الحساب. بيانات جهازك تبقى مستقلة. الرفع يعمل أثناء فتح التطبيق، ولا نضمن تشغيله وهو مغلق.','L’envoi est facultatif et inclut le magasin et ses utilisateurs locaux. Abonnement distinct requis. Après expiration, téléchargement autorisé pendant 30 jours, puis suppression planifiée avec notification du compte. Les données locales restent indépendantes. Envoi pendant l’utilisation ; aucune exécution garantie lorsque l’application est fermée.'));dialog.append(notice);

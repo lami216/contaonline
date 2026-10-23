@@ -15,7 +15,7 @@ export function queueCloud(tx,snapshot){
     };
   };
 }
-export async function cloudStatus(db){return {config:(await db.get('meta','cloud-config'))?.value||null,ack:(await db.get('meta','cloud-ack'))?.value||null,pending:(await allOutbox(db)).length};}
+export async function cloudStatus(db){return {config:(await db.get('meta','cloud-config'))?.value||null,ack:(await db.get('meta','cloud-ack'))?.value||null,attempt:(await db.get('meta','cloud-attempt'))?.value||null,pending:(await allOutbox(db)).length};}
 export function allOutbox(db){return new Promise((resolve,reject)=>{const request=db.db.transaction('outbox').objectStore('outbox').getAll();request.onsuccess=()=>resolve(request.result.sort((a,b)=>a.event.sequence-b.event.sequence));request.onerror=()=>reject(request.error);});}
 export function configureCloud(db,config){
   return new Promise((resolve,reject)=>{

@@ -85,12 +85,31 @@ export class Licensing {
       return {pending:false,permit,keys:this.publicKeys,generation:license.generation,serverTime:now};
     });
   }
-  /** @param {{account_id:string,token_hash:string}} session @param {{challengeId:string,signature:string}} input @param {number} now */
-  async heartbeat(session,input,now=Date.now()){
-    const proof=await this.prove(session,input,'presence',now);
+  /** Known-key channels authenticate only by proof; they never mint a service session or app permit.
+   * @param {{licenseId:string,installationId:string,context?:string}} input @param {'observe'|'backup'} purpose @param {number} now */
+  knownChallenge({licenseId,installationId,context=''},purpose,now=Date.now()){
+    const i=this.store.get('SELECT * FROM installations WHERE id=? AND license_id=?',installationId,licenseId);requireValue(i,'Unavailable installation',403);
+    const a=this.store.get('SELECT * FROM accounts WHERE id=?',i.account_id),l=this.store.scope(licenseId,i.account_id);requireValue(a&&l,'Unavailable installation',403);
+    if(purpose==='backup')requireValue(a.role==='customer'&&!a.disabled&&i.status==='approved'&&l.status==='approved'&&l.writer_id===i.id&&/^[a-f0-9]{64}$/.test(context),'Approved current writer required',403);
+    this.store.atomic(()=>this.store.limit('known-challenge:'+i.id,30,60000,now));
+    const id=randomUUID(),marker='installation:'+i.id,message=canonical({id,nonce:token(),account:i.account_id,licenseId,installationId,purpose,context,expiresAt:now+120000});
+    this.store.run('INSERT INTO challenges VALUES(?,?,?,?,?,?,?,?,?,NULL)',id,i.account_id,marker,purpose,licenseId,i.id,i.public_jwk,message,now+120000);this.store.run('DELETE FROM challenges WHERE expires_at<?',now-86400000);return {id,message,expiresAt:now+120000};
+  }
+  /** @param {string} challengeId @param {string} purpose @param {number} now */
+  keySession(challengeId,purpose,now=Date.now()){
+    const c=this.store.get('SELECT * FROM challenges WHERE id=?',challengeId);requireValue(c&&c.purpose===purpose&&c.session_hash==='installation:'+c.installation_id&&c.expires_at>now&&c.consumed_at===null,'Unavailable key challenge',403);
+    const a=this.store.get('SELECT role FROM accounts WHERE id=?',c.account_id);requireValue(a,'Unavailable account',403);return {account_id:String(c.account_id),token_hash:String(c.session_hash),role:String(a.role)};
+  }
+  /** @param {{challengeId:string,signature:string}} input @param {number} now */
+  async observe(input,now=Date.now()){return this.heartbeat(this.keySession(input.challengeId,'observe',now),input,now,true);}
+  /** @param {{account_id:string,token_hash:string}} session @param {{challengeId:string,signature:string}} input @param {number} now @param {boolean} knownKey */
+  async heartbeat(session,input,now=Date.now(),knownKey=false){
+    const proof=await this.prove(session,input,knownKey?'observe':'presence',now);
     return this.store.atomic(()=>{
-      this.consume(proof,session,now);
+      if(knownKey)requireValue(this.store.run('UPDATE challenges SET consumed_at=? WHERE id=? AND consumed_at IS NULL AND expires_at>? AND session_hash=?',now,proof.id,now,session.token_hash).changes===1,'Challenge already used',409);else this.consume(proof,session,now);
       const installation=this.store.get('SELECT * FROM installations WHERE id=?',proof.installation_id),license=this.store.scope(proof.license_id,session.account_id);
+      const account=this.store.get('SELECT disabled FROM accounts WHERE id=?',session.account_id);
+      if(knownKey&&(account.disabled||installation.status!=='approved'||license.status!=='approved'))return {serverTime:now,accountStatus:account.disabled?'disabled':'active',licenseStatus:license.status,installationStatus:installation.status,writer:false,overlap:false,reviewRequired:false,generation:license.generation};
       requireValue(installation?.status==='approved'&&license,'Observation unavailable',403);
       const previous=this.store.get('SELECT * FROM presence WHERE installation_id=?',installation.id);
       const others=this.store.all('SELECT p.* FROM presence p JOIN installations i ON i.id=p.installation_id WHERE i.license_id=? AND i.id<>? AND i.status=? AND p.lease_until>?',license.id,installation.id,'approved',now);
@@ -104,7 +123,7 @@ export class Licensing {
         if(inserted.changes)this.store.audit(session.account_id,'presence.overlap',license.id,'Repeated connected overlap after grace','',{},now);
       }
       this.store.run('UPDATE installations SET last_seen_at=? WHERE id=?',now,installation.id);
-      return {serverTime:now,overlap,reviewRequired:overlap,licenseStatus:license.status,installationStatus:installation.status,writer:license.writer_id===installation.id&&license.status==='approved'&&license.ends_at>now,generation:license.generation};
+      return {serverTime:now,accountStatus:'active',overlap,reviewRequired:overlap,licenseStatus:license.status,installationStatus:installation.status,writer:license.writer_id===installation.id&&license.status==='approved'&&license.ends_at>now,generation:license.generation};
     });
   }
   /** @param {{account_id:string}} session @param {string} licenseId @param {string} installationId @param {number} generation @param {number} now */

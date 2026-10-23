@@ -5,6 +5,9 @@ const copy={
 let lang=localStorage.getItem('alkarna-site-language')==='fr'?'fr':'ar',selected=localStorage.getItem('contaonline-platform')||(/iPhone|iPad/.test(navigator.userAgent)?'iphone':'android'),config={};
 function render(){
  document.documentElement.lang=lang;document.documentElement.dir=lang==='fr'?'ltr':'rtl';
+ if(config.brandName){document.querySelector('.eyebrow').textContent=config.brandName;document.title=config.brandName;}
+ let support=document.getElementById('public-support');if(!support){support=document.createElement('a');support.id='public-support';document.querySelector('footer').prepend(support);}support.hidden=true;
+ if(/^\+?[0-9]{7,15}$/.test(config.supportPhone||'')){support.href='tel:'+config.supportPhone;support.textContent=(lang==='fr'?'Assistance : ':'الدعم: ')+config.supportPhone;support.hidden=false;}
  for(const node of document.querySelectorAll('[data-copy]'))node.textContent=copy[lang][node.dataset.copy];
  for(const platform of ['android','iphone']){document.getElementById(platform).setAttribute('aria-pressed',String(selected===platform));document.getElementById(platform+'-content').hidden=selected!==platform;}
  const link=document.getElementById('apk-download'),status=document.getElementById('apk-status');link.hidden=true;status.textContent=copy[lang].notAvailable;
