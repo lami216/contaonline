@@ -17,11 +17,16 @@
     "check": "npm run verify:source && npm run prepare:assets && npm run lint && npm run typecheck && npm run test:baseline && npm run build && npm test",
     "build": "node scripts/build.mjs",
     "start:review": "node server/start.mjs",
+    "start": "node server/start.mjs",
     "staging:key": "node scripts/staging-key.mjs",
     "service:init": "node scripts/service-admin.mjs init",
     "migrate": "node scripts/service-admin.mjs migrate",
     "bootstrap-admin": "node scripts/service-admin.mjs init",
     "recover-admin": "node scripts/service-admin.mjs recover-admin",
+    "retention:dry-run": "node scripts/service-admin.mjs retention-dry-run",
+    "retention:apply": "node scripts/service-admin.mjs retention-apply",
+    "server:recovery": "node scripts/server-recovery.mjs",
+    "test:pdf": "node scripts/verify-pdf-render.mjs",
     "test:e2e": "node e2e/pwa.mjs && node e2e/service.mjs"
   },
   "dependencies": {

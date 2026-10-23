@@ -70,6 +70,9 @@ test('renewal accumulates from live end, expired renewal from administrative app
     assert.throws(()=>f.store.renew('admin',{licenseId:old.id,durationMs:1,reason:'',paymentReference:'p'}));assert.throws(()=>f.store.renew('admin',{licenseId:old.id,durationMs:1,reason:'valid reason',paymentReference:''}));
   }finally{await f.close();}
 });
+test('a recorded recent-activity conflict stays pending for administrative review after the lease later expires',async()=>{
+  const f=await fixture();try{const i=await identity(f),j=await identity(f);await f.licensing.enroll(f.session,await proof(f,i,f.now),f.now);assert.deepEqual(await f.licensing.enroll(f.session,await proof(f,j,f.now+1000),f.now+1000),{pending:true});assert.deepEqual(await f.licensing.enroll(f.session,await proof(f,j,f.now+600001),f.now+600001),{pending:true});assert.equal(f.store.get('SELECT writer_id FROM licenses WHERE id=?',f.license.id).writer_id,i.id);}finally{await f.close();}
+});
 test('known superseded return remains observable without automatically reclaiming writer authority or a fresh permit',async()=>{
   const f=await fixture();try{const old=await identity(f),current=await identity(f);await f.licensing.enroll(f.session,await proof(f,old,f.now),f.now);const later=f.now+600001;await f.licensing.enroll(f.session,await proof(f,current,later),later);
     const returned=await f.licensing.enroll(f.session,await proof(f,old,later+600001),later+600001);assert.deepEqual(returned,{pending:true,superseded:true});

@@ -1,13 +1,7 @@
-# النشر — لم ينفذ
-لا يوجد staging عام أو خدمة إنتاجية في هذه الدفعة. CI يفحص ويبني فقط، ومخرجات المرحلة الأولى مغلقة وغير deployable.
-المستودع العام ليس بيئة staging؛ لا نشر لـPages ولا خدمة عامة لمجرد إخفاء الرابط.
+# Deployment status and boundary
 
-بعد اكتمال الأمان واختبارات المراحل:
-- اختيار origin ثابت ونطاق/منفذ لا يتعارضان مع مواقع المالك، ثم موافقة منفصلة.
-- Node 24 LTS محدث، مستخدم خدمة غير root، loopback خلف Nginx/TLS.
-- بيانات SQLite ومفاتيح التوقيع والجلسات وملفات النسخ خارج public وخارج مجلد الإصدار.
-- staging بحاجز وصول مستقل يشمل كل route/assets/API قبل خدمة أي نسخة غير مكتملة؛ default deny، لا اعتماد على URL سري.
-- health/readiness محدودان دون secrets أو بيانات أعمال؛ readiness لا يصبح نجاحًا عند نقص migration أو مفاتيح أو موارد.
-- تسجيل request IDs وأخطاء وحجوم وتوقيت دون passwords/tokens/محتوى مالي.
-- اختبار rollback المتوافق مع migrations، وقابلية قراءة البيانات الجديدة؛ لا rollback يحذف عمليات.
-- لا تنفيذ لأي تعديل VPS/DNS/Nginx أو visibility ضمن الإذن الحالي.
+No deployment was performed. No source/Android/VPS/DNS/Nginx/visibility changes or merge were performed. A public repository is not an access-control boundary for an incomplete staging application.
+
+The review entry binds loopback, requires a separate private gate on every route, refuses NODE_ENV=production and returns non-release-ready (503) from readiness. There is no Pages/upload/deploy workflow. Approved future staging must remain authenticated/default-deny even if its URL is known.
+
+See OPERATIONS.md for install, bootstrap/MFA, migrate/start, private data placement, retention, encrypted recovery and rollback. Before a separate deployment request, provide a concrete domain/origin/port and isolation plan, TLS/Secure-cookie/proxy configuration, service account/permissions, capacity/disk limits, monitoring, backup verification and rollback. Physical iPhone acceptance remains a gate. Do not treat the existing review server as production-ready.

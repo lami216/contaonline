@@ -8,7 +8,7 @@ const el=(tag,text)=>{const node=document.createElement(tag);if(text!==undefined
 let running=false,nextAttempt=0,failures=0,lastAttempt=null,lastError='',dialog;
 const api=(url,body)=>globalThis.ContaoService.serviceApi('/api/backup/'+url,body);
 export async function syncCloud(force=false){
-  if(running||!navigator.onLine||document.visibilityState!=='visible'||!globalThis.ContaoRuntime?.isAuthenticated()||!force&&Date.now()<nextAttempt)return;
+  if(running||globalThis.ContaoService?.isUpdateFrozen()||!navigator.onLine||document.visibilityState!=='visible'||!globalThis.ContaoRuntime?.isAuthenticated()||!force&&Date.now()<nextAttempt)return;
   running=true;let db;
   try{
     db=await new WebShopDatabase().open();const status=await cloudStatus(db);if(!status.config?.enabled||status.config.requiresReview)return;

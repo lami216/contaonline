@@ -70,7 +70,7 @@ export async function build(root = ROOT) {
   const worker=template.replace('__VERSION__',JSON.stringify(version)).replace('__ASSETS__',JSON.stringify(assets));
   await writeFile(path.join(appRoot,'sw.js'),worker);
   files.push({path:'app/sw.js',bytes:Buffer.byteLength(worker),sha256:createHash('sha256').update(worker).digest('hex')});
-  await writeFile(path.join(output,'build-manifest.json'),JSON.stringify({phase:5,deployable:false,version,upstream:'1efb01fc1cd7bc62670510e57c6158734ad4bf05',upstreamPrecacheEntries:upstreamCount,precacheEntries:assets.length,files},null,2)+'\n');
-  return {phase:5,files:files.length,precacheEntries:assets.length,version,deployable:false};
+  await writeFile(path.join(output,'build-manifest.json'),JSON.stringify({phase:6,deployable:false,version,upstream:'1efb01fc1cd7bc62670510e57c6158734ad4bf05',upstreamPrecacheEntries:upstreamCount,precacheEntries:assets.length,files},null,2)+'\n');
+  return {phase:6,files:files.length,precacheEntries:assets.length,version,deployable:false};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))console.log(JSON.stringify(await build()));

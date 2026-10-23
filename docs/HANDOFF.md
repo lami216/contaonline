@@ -19,3 +19,8 @@ This is not a complete production application. Readiness remains 503; start reje
 ## Backup batch in progress
 Current branch: feat/phase-5-backups, based on remote installation-hardening 72ca3dc5268ec257dd855b5ae8c95510436d97bb. Phase-3 CI succeeded at https://github.com/lami216/contaonline/actions/runs/39958265798 and phase-4 CI at https://github.com/lami216/contaonline/actions/runs/39958715881 .
 The optional backup contract, private version store, proof-bound dispatch/download, local atomic outbox, foreground scheduling, consent, safe restore and audited retention are now implemented. See BACKUP_REVIEW.md. Nineteen local tests, all six baseline scripts, lint/typecheck/build passed. Browser backup/clean-install recovery coverage is in CI and must not be reported as passed before its result. Next: fix any browser failures, then complete hardening/operations documents, measured recovery and remaining PWA/WebKit/iPhone acceptance. Do not deploy or claim production completion.
+
+## دفعة تقوية ومراجعة المرحلة السادسة
+الفرع feat/phase-6-review مبني على 25a4e3031224af4e592df317a20af2f6b0c9fdf2 ذي CI ناجح. دفعات المصدر والحسابات والتثبيتات والنسخ كلها مرفوعة بسلسلة parents دون merge أو force push.
+22 اختبارًا محليًا وbaseline الستة وlint/typecheck/build نجحت. أضيفت اختبارات تحديث PWA متعدد التبويبات وتراجع الساعة وبيع نقدي/آجل حقيقي أوفلاين مع تحقق الحسابات ثم الاستعادة؛ Chromium/WebKit بوابتا CI لهذه الدفعة. لا تكتب نجاحهما قبل قراءة النتيجة النهائية.
+أرشفة السيرفر المشفرة والتعافي وCLI bootstrap/recovery اختُبرت ببيانات صناعية. عيوب PDF المكتشفة بصريًا عولجت. راجع PHASE6_REVIEW وOPERATIONS وRECOVERY وRELEASE_ACCEPTANCE وTEST_REPORT. الحالة ما تزال مراجعة دون نشر؛ يلزم قبول جهاز iPhone فعلي وقرارات نشر منفصلة، مع الفجوات المسماة في قائمة القبول.

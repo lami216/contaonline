@@ -25,11 +25,11 @@ export async function reportPdf(model) {
   const format=value=>typeof value==='number'?value.toLocaleString(french?'fr-FR':'en-US',{maximumFractionDigits:2}):typeof value==='boolean'?t(value?'نعم':'لا'):String(value??'');
   function font(size=10,weight='normal'){doc.setFont('Arabic',weight);doc.setFontSize(size);doc.setTextColor(25,40,60);}
   function text(value,x,baseline,width,size=10,weight='normal'){
-    font(size,weight);doc.setR2L(!french);
-    doc.text(format(value),x,baseline,{align:french?'left':'right',maxWidth:width,isInputVisual:false});
+    font(size,weight);doc.setR2L(false);
+    doc.text(format(value),x,baseline,{align:french?'left':'right',maxWidth:width,isInputVisual:false,isOutputVisual:true,isOutputRtl:false});
   }
   function wrap(value,width,size=10,weight='normal'){font(size,weight);return doc.splitTextToSize(format(value),Math.max(12,width));}
-  function footer(){font(8);doc.setR2L(!french);doc.text(t('صفحة {number}').replace('{number}',String(page)),french?M:W-M,H-20,{align:french?'left':'right'});}
+  function footer(){text(t('صفحة {number}').replace('{number}',String(page)),french?M:W-M,H-20,W-2*M,8);}
   function newPage(){if(page){footer();doc.addPage();}page++;y=34;text(model.brand||'AlKarna',french?M:W-M,y,W-2*M,17,'bold');y+=19;
     const branding=model.branding||{},details=[branding.phone,branding.address,branding.registrationNumber,branding.taxNumber].filter(Boolean).join(' · ');
     if(details){for(const line of wrap(details,W-2*M,8)){text(line,french?M:W-M,y,W-2*M,8);y+=12;}}
@@ -38,7 +38,7 @@ export async function reportPdf(model) {
   function row(cells,widths,header=false,start=0,count){
     const lineHeight=13,total=count??Math.max(1,...cells.map(cell=>cell.length)),height=8+total*lineHeight;
     let x=french?M:W-M;doc.setDrawColor(170,183,198);doc.setFillColor(header?228:255,header?235:255,header?244:255);
-    for(let i=0;i<cells.length;i++){const width=widths[i]*(W-2*M),left=french?x:x-width;doc.rect(left,y,width,height,'FD');cells[i].slice(start,start+total).forEach((line,j)=>text(line,french?left+5:left+width-5,y+15+j*lineHeight,width-10,header?9:10,header?'bold':'normal'));x+=french?width:-width;}y+=height;
+    for(let i=0;i<cells.length;i++){const width=widths[i]*(W-2*M),left=french?x:x-width;doc.setFillColor(header?228:255,header?235:255,header?244:255);doc.rect(left,y,width,height,'FD');cells[i].slice(start,start+total).forEach((line,j)=>text(line,french?left+5:left+width-5,y+15+j*lineHeight,width-10,header?9:10,header?'bold':'normal'));x+=french?width:-width;}y+=height;
   }
   newPage();
   for(const block of model.blocks||[]){

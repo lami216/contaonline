@@ -21,8 +21,8 @@ if(command==='init'){
   try{
     if(store.get('SELECT id FROM accounts LIMIT 1'))throw Error('An account already exists; bootstrap refused');
     const secret=token(),totp=randomBytes(20),codes=Array.from({length:10},token),id=randomUUID(),hash=await passwordHash(secret);
-    store.atomic(()=>{store.run('INSERT INTO accounts(id,username,password_hash,role,totp_encrypted,created_at) VALUES(?,?,?,?,?,?)',id,username,hash,'owner',encrypt(totp.toString('base64url'),encryptionKey),Date.now());for(const code of codes)store.run('INSERT INTO recovery_codes VALUES(?,?,NULL)',id,digest(code));store.audit(id,'admin.bootstrap',id,'Explicit local administrative bootstrap');});
     await writeFile(path.join(directory,'bootstrap-receipt.json'),JSON.stringify({username,initialPassword:secret,totpBase32:base32(totp),totpUri:`otpauth://totp/contaonline:${encodeURIComponent(username)}?secret=${base32(totp)}&issuer=contaonline`,recoveryCodes:codes,notice:'Transfer privately to the owner, enroll MFA and remove this receipt. Config and recovery codes need encrypted offline backups.'},null,2)+'\n',{flag:'wx',mode:0o600});
+    store.atomic(()=>{store.run('INSERT INTO accounts(id,username,password_hash,role,totp_encrypted,created_at) VALUES(?,?,?,?,?,?)',id,username,hash,'owner',encrypt(totp.toString('base64url'),encryptionKey),Date.now());for(const code of codes)store.run('INSERT INTO recovery_codes VALUES(?,?,NULL)',id,digest(code));store.audit(id,'admin.bootstrap',id,'Explicit local administrative bootstrap');});
     console.log('Bootstrap complete. Read the private bootstrap-receipt.json locally; no credentials are printed.');
   }finally{store.close();}
 }else if(command==='recover-admin'){
@@ -32,8 +32,9 @@ if(command==='init'){
   try{
     const account=store.get('SELECT * FROM accounts WHERE username=? AND role=?',username,'owner');if(!account)throw Error('Unavailable administrator');
     const secret=token(),totp=randomBytes(20),codes=Array.from({length:10},token),hash=await passwordHash(secret);
+    await writeFile(receipt,JSON.stringify({username,initialPassword:secret,totpBase32:base32(totp),recoveryCodes:codes},null,2)+'\n',{flag:'wx',mode:0o600});
     store.atomic(()=>{if(store.run('UPDATE recovery_codes SET used_at=? WHERE account_id=? AND code_hash=? AND used_at IS NULL',Date.now(),account.id,digest(code)).changes!==1)throw Error('Invalid or consumed recovery code');store.run('UPDATE accounts SET password_hash=?,totp_encrypted=?,last_totp_step=-1,credential_version=credential_version+1 WHERE id=?',hash,encrypt(totp.toString('base64url'),Buffer.from(config.encryptionKey,'base64url')),account.id);store.run('DELETE FROM sessions WHERE account_id=?',account.id);store.run('DELETE FROM recovery_codes WHERE account_id=?',account.id);for(const replacement of codes)store.run('INSERT INTO recovery_codes VALUES(?,?,NULL)',account.id,digest(replacement));store.audit(account.id,'admin.recovery',account.id,'Explicit local recovery with a one-time recovery code');});
-    await writeFile(receipt,JSON.stringify({username,initialPassword:secret,totpBase32:base32(totp),recoveryCodes:codes},null,2)+'\n',{flag:'wx',mode:0o600});console.log('Recovery complete. A private recovery receipt was written; no credentials are printed.');
+    console.log('Recovery complete. A private recovery receipt was written; no credentials are printed.');
   }finally{store.close();}
 }else{
   const config=JSON.parse(await readFile(process.env.SERVICE_CONFIG_FILE||path.join(directory,'config.json'),'utf8'));

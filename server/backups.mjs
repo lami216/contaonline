@@ -13,13 +13,14 @@ export class Backups {
   /** @param {import('./store.mjs').ServiceStore} store @param {import('./licensing.mjs').Licensing} licensing @param {string} directory @param {{maxSnapshotBytes?:number,maxAccountBytes?:number}} options */
   constructor(store,licensing,directory,{maxSnapshotBytes=8*1024*1024,maxAccountBytes=256*1024*1024}={}){
     this.store=store;this.licensing=licensing;this.directory=path.resolve(directory);this.maxSnapshotBytes=maxSnapshotBytes;this.maxAccountBytes=maxAccountBytes;mkdirSync(this.directory,{recursive:true,mode:0o700});
-    store.db.exec(`
+    store.atomic(()=>store.db.exec(`
       CREATE TABLE IF NOT EXISTS backup_consents(shop_id TEXT PRIMARY KEY REFERENCES shops(id),account_id TEXT NOT NULL REFERENCES accounts(id),backup_license_id TEXT NOT NULL REFERENCES licenses(id),enabled INTEGER NOT NULL,policy_version INTEGER NOT NULL,consented_at INTEGER NOT NULL,notice_at INTEGER);
       CREATE TABLE IF NOT EXISTS backup_streams(id TEXT PRIMARY KEY,account_id TEXT NOT NULL REFERENCES accounts(id),shop_id TEXT NOT NULL REFERENCES shops(id),app_license_id TEXT NOT NULL REFERENCES licenses(id),installation_id TEXT NOT NULL REFERENCES installations(id),generation INTEGER NOT NULL,cursor INTEGER NOT NULL DEFAULT 0,latest_version_id TEXT);
       CREATE TABLE IF NOT EXISTS backup_events(stream_id TEXT NOT NULL REFERENCES backup_streams(id),sequence INTEGER NOT NULL,event_id TEXT UNIQUE NOT NULL,digest TEXT NOT NULL,PRIMARY KEY(stream_id,sequence));
       CREATE TABLE IF NOT EXISTS backup_versions(id TEXT PRIMARY KEY,stream_id TEXT NOT NULL REFERENCES backup_streams(id),shop_id TEXT NOT NULL REFERENCES shops(id),account_id TEXT NOT NULL REFERENCES accounts(id),sequence INTEGER NOT NULL,checksum TEXT NOT NULL,bytes INTEGER NOT NULL,path TEXT NOT NULL,created_at INTEGER NOT NULL,status TEXT NOT NULL CHECK(status IN ('ready','deleting','deleted')));
       CREATE INDEX IF NOT EXISTS backup_versions_shop ON backup_versions(shop_id,created_at);
-    `);
+      INSERT OR IGNORE INTO migrations VALUES(2,unixepoch()*1000);
+    `));
   }
   /** @param {{account_id:string,role:string}} session @param {string} shopId @param {boolean} download @param {number} now */
   entitlement(session,shopId,download=false,now=Date.now()){
@@ -62,7 +63,9 @@ export class Backups {
     return this.store.atomic(()=>{
       const stream=this.store.get('SELECT * FROM backup_streams WHERE id=? AND account_id=?',streamId,session.account_id);requireValue(stream,'Unavailable stream',403);
       this.licensing.authorizeUpload(session,stream.app_license_id,stream.installation_id,stream.generation,now);this.entitlement(session,stream.shop_id,false,now);
-      let snapshot=stream.latest_version_id?this.read(this.store.get('SELECT * FROM backup_versions WHERE id=? AND status=?',stream.latest_version_id,'ready')):null,cursor=stream.cursor;
+      const previousVersion=stream.latest_version_id?this.store.get('SELECT * FROM backup_versions WHERE id=? AND status=?',stream.latest_version_id,'ready'):null;
+      requireValue(!stream.latest_version_id||previousVersion,'Backup base is no longer available; review and enable a new stream',409);
+      let snapshot=previousVersion?this.read(previousVersion):null,cursor=stream.cursor;
       for(const event of events){
         requireValue(event&&typeof event.id==='string'&&event.id.length<=100&&Number.isSafeInteger(event.sequence)&&event.sequence>0,'Invalid backup event');const digest=hash(canonical(event));
         const previous=this.store.get('SELECT * FROM backup_events WHERE stream_id=? AND sequence=?',stream.id,event.sequence);

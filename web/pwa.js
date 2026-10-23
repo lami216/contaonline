@@ -46,8 +46,10 @@ export async function preparePwa(){
     navigator.serviceWorker.addEventListener('message',event=>{
       if(event.data?.type==='CAN_ACTIVATE'){
         const safe=globalThis.ContaoRuntime?.saveBeforeUpdate?.()??(!!document.querySelector('#service-login')&&!document.querySelector('#service-login button:disabled'));
+        if(safe){requestingUpdate=true;globalThis.ContaoService?.freezeForUpdate(true);}
         event.source?.postMessage({type:'ACTIVATE_ACK',requestId:event.data.requestId,ok:safe});
       }
+      if(event.data?.type==='ACTIVATION_CANCELLED'){requestingUpdate=false;globalThis.ContaoService?.freezeForUpdate(false);}
     });
     navigator.serviceWorker.addEventListener('controllerchange',()=>{if(requestingUpdate)location.reload();});
     registration.addEventListener('updatefound',()=>{

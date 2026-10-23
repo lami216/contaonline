@@ -7,6 +7,7 @@ const t=(ar,fr)=>language()==='fr'?fr:ar;
 const root=document.getElementById('phone');
 let activation=null,csrf=null,shopBooted=false;
 let connecting=false;
+let updateFrozen=false;
 function notice(text){let target=document.getElementById('web-message')||document.querySelector('[data-web-message]');if(!target){target=document.createElement('p');target.dataset.webMessage='';document.getElementById('web-pwa-status')?.append(target);}target.textContent=text;}
 function element(tag,text){const node=document.createElement(tag);if(text)node.textContent=text;return node;}
 async function api(url,body){
@@ -16,6 +17,7 @@ async function api(url,body){
   return result;
 }
 async function requireWrite(scope){
+  if(updateFrozen)throw Error(t('جارٍ تطبيق تحديث آمن. انتظر إعادة الفتح.','Mise à jour en cours. Attendez le rechargement.'));
   const active=await currentActivation();
   if(!active||active.payload.accountId!==scope.accountId||active.payload.shopId!==scope.shopId)throw Error(t('تغيّر الحساب المفتوح. أعد فتح المحل.','Le compte actif a changé. Rouvrez le magasin.'));
   const record=active.record,clientNow=Date.now(),now=clientNow+(record.clockOffsetMs||0),previous=record.maxWallMs||active.payload.issuedAt;
@@ -27,6 +29,7 @@ async function requireWrite(scope){
 function canWrite(){return !!activation?.canWrite&&!activation.record.restriction&&Date.now()>=(activation.record.lastClientWallMs||Date.now())-120000&&Math.max(Date.now()+(activation.record.clockOffsetMs||0),activation.record.maxWallMs)<activation.payload.expiresAt;}
 const readActions=new Set(['site:login','site:logout','site:account-menu','site:support','site:audit','site:backup','backup:save','site:previous-backup','site:export','site:export-excel','site:export-pdf','site:export-print','site:print','close','back','cancel','print']);
 async function allowAction(action,permissionFor){
+  if(updateFrozen)return false;
   if(canWrite()){try{await requireWrite(globalThis.ContaoService.scope);return true;}catch(error){notice(error.message);}}
   if(readActions.has(action)||/^(site:language:|appearance:|go:home$|site:feature:document-(output|pdf|excel)$)/.test(action))return true;
   let capability;try{capability=permissionFor(action);}catch{}
@@ -48,7 +51,7 @@ async function bootShop(active){
     const challenge=await serviceApi('/api/activation/challenge',{licenseId:scope.licenseId,installationId:scope.installationId,publicJwk:active.identity.publicJwk,purpose:'backup',context});
     return serviceApi('/api/backup/dispatch',{challengeId:challenge.id,signature:await proof(active.identity,challenge.message),operation,payload});
   }
-  globalThis.ContaoService={scope,canWrite,requireWrite,allowAction,serviceApi,backupRequest,openBackupPanel,reconnect:()=>renderGate(),setupIdentity:()=>({name:activation.payload.customerName,shop:activation.payload.storeName})};
+  globalThis.ContaoService={scope,canWrite,requireWrite,allowAction,serviceApi,backupRequest,openBackupPanel,isUpdateFrozen:()=>updateFrozen,freezeForUpdate:value=>{updateFrozen=value;},reconnect:()=>renderGate(),setupIdentity:()=>({name:activation.payload.customerName,shop:activation.payload.storeName})};
   await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./engine.js';script.onload=resolve;script.onerror=()=>reject(Error('تعذّر فتح ملفات التطبيق'));document.body.append(script);});
   await import('./app.js');
   startCloud();

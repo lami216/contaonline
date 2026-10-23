@@ -43,6 +43,6 @@ self.addEventListener('message',event=>{
       if(!windows.length)request.finish();else for(const client of windows)client.postMessage({type:'CAN_ACTIVATE',requestId});
     });
     event.ports[0]?.postMessage({ok});
-    if(ok)await self.skipWaiting();
+    if(ok)await self.skipWaiting();else for(const client of windows)client.postMessage({type:'ACTIVATION_CANCELLED'});
   })());
 });

@@ -1,22 +1,27 @@
-# نتائج الاختبار — المرحلة الأولى
+# نتائج الاختبارات — مراجعة 23 أكتوبر 2026
 
-الحالة: تحقق محلي فعلي في الوجهة؛ لا ادعاء اكتمال التطبيق أو قبول iPhone.
+## تحقق مرفوع سابقًا
 
-| التحقق | النتيجة |
-|---|---|
-| Node | 24.22.1 LTS، تنزيل رسمي ببصمة SHA-256 متحققة |
-| Fastify / lockfile | 5.12.7؛ npm 11.19.1؛ package-lock.json مثبت |
-| المصدر | 52 ملفًا مطابقة بالبايتات وSHA-256 وGit blob للـSHA المعتمد |
-| موارد الأوفلاين | 45 مدخل precache متاحًا؛ خطان OFL وsql.js 1.13.0 MIT محليًا |
-| baseline | السكربتات الستة نجحت في الوجهة؛ 15 فحص مجال و20 فحص استيراد إضافة للتقارير/الترجمة/التوجيه/الأطراف |
-| lint | نجح للكود الجديد؛ baseline الأصلي مستثنى بالاسم مع اختباراته الأصلية |
-| typecheck | TypeScript strict/checkJs نجح لسكربتات البناء والتحقق والاختبارات الجديدة |
-| الاختبارات الإضافية | 2 نجحت، 0 فاشل/متجاوز؛ تتضمن فشل البصمة المعدلة والخط المفقود |
-| build | 48 ملفًا ببيان بصمات؛ deployable=false؛ بداية التشغيل مغلقة |
-| npm audit عند التثبيت | 0 vulnerabilities |
+| الدفعة | commit | CI الفعلي |
+|---|---|---|
+| نقل الأساس | 7a1cc78f0d43cf5aefa03c923f2b201d9105e143 | https://github.com/lami216/contaonline/actions/runs/39873932011 — ناجح |
+| PWA | ff8c074dd67ba4e04e8f8e52bc5e775baa7d58a6 | https://github.com/lami216/contaonline/actions/runs/39955617447 — ناجح، 8 سيناريوهات Chromium |
+| خدمة الحسابات والتفعيل | faaaee36882a079e34ec1512866499075c1ae131 | https://github.com/lami216/contaonline/actions/runs/39958265798 — ناجح، إدارة MFA وتفعيل متصفح فعلي |
+| تقوية التثبيتات | 72ca3dc5268ec257dd855b5ae8c95510436d97bb | https://github.com/lami216/contaonline/actions/runs/39958715881 — ناجح |
+| النسخ والاستعادة | 25a4e3031224af4e592df317a20af2f6b0c9fdf2 | https://github.com/lami216/contaonline/actions/runs/39960935096 — ناجح، رفع دلتا أوفلاين واستعادة متصفح نظيف |
 
-الأوامر: npm ci --ignore-scripts، npm run check، npm run build، npm audit --audit-level=high. نتيجة CI تحفظ في handoff بعد الوصول لحالتها النهائية.
+## دفعة المراجعة الحالية
 
-لم تُختبر بعد: تفعيل ويب، إدارة/MFA، سباقات SQLite، متصفحات/تحديث PWA فعلي/حصص التخزين، PDF نصي، نسخة سحابية واستعادة تثبيت نظيف، iPhone حقيقي، تحمل حمل أو نشر.
+نجح npm run check محليًا: 52 بصمة بايت/Git blob، baseline الستة، lint، strict/checkJs للأدوات والخدمة والاختبارات ضمن tsconfig، build و22 اختبارًا، دون فاشل أو skipped. تشمل اختبار CLI/MFA/recovery، ECDSA/nonce/expiry/clock contract، تثبيتات ومعدل/تعليق وعودة قديم، سباقًا فعليًا باتصالين SQLite مستقلين، النسخ/ACK/دلتا/عزل/حصة/احتفاظ، وتعافي سيرفر مشفر مع رفض العبث والكتابة فوق هدف قائم.
 
-فشل أول typecheck بسبب مصفوفة غير مصرح بنوعها في build؛ أصلح بتعريف نوع فعلي ثم نجح الفحص الكامل والبناء. لا تغيير في الكود المحاسبي المنقول.
+الأوامر: npm ci --ignore-scripts؛ npm run check؛ npm run test:e2e؛ BROWSER_ENGINE=webkit npm run test:e2e؛ npm run test:pdf؛ node scripts/measure-review.mjs. نتائج Chromium/WebKit المضافة لهذه الدفعة لا تُفترض قبل انتهاء CI الخاص بالـcommit المرفوع.
+
+تعذر Chromium محليًا أولًا بسبب ERR_NETWORK_ACCESS_DENIED إلى loopback؛ استُخدم CI فعلي ونجح، لا نتيجة مختلقة. npm audit محليًا تعذر DNS، وCI السابق أكد 0 vulnerabilities. اختبار التعافي واجه EPERM في Temp المعزول لويندوز؛ نُفّذ لاحقًا بنجاح مع TEST_TMPDIR خاص داخل private/، ومع COPYFILE_EXCL بدل hardlink عند إتمام الأرشيف. لا تغيير في البيانات الحقيقية أو الخوارزمية للتحايل على نتيجة.
+
+## PDF والقياسات
+
+توليد عينتي PDF من ثلاث صفحات عبر نفس مولد التطبيق، وrender عبر Poppler. كشفت المراجعة لون تعبئة متسربًا يخفي بعض الأرقام وقلبًا لاتجاه النصوص اللاتينية/الأرقام؛ أُصلحا. العينات نص وخطوط، بلا raster للصورة، مع عربية وأرقام ونص مختلط ورؤوس جداول/تذييل صفحات. ملفات الاختبار داخل private/ ولا بيانات عملاء فيها. مشاركة Files والطباعة على iPhone لم تُختبرا فعليًا.
+
+القياسات الخام في evidence/MEASUREMENTS.json: build نحو 3.81 MB بلا ضغط، 61 مورد precache؛ تجربة 10,000 منتج أرسلت دلتا 129 بايت لتعديل واحد بدل snapshot 867,867 بايت، مع زمن diff محلي موثق. اختبار 1,000 health inject متتابع داخلي لا يقيس الشبكة أو المستخدمين المتزامنين؛ لا وعد سعة.
+
+المتطلبات المتبقية وحدود النتائج في RELEASE_ACCEPTANCE.md. نجاح baseline أو UI أو CI لا يساوي قبول إنتاج أو iPhone فعلي.

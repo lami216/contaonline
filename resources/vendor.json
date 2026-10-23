@@ -21,6 +21,16 @@
       ],
       "licenseFile": "approved-runtime/assets/OFL-IBM-Plex.txt",
       "provenance": "Transferred from pinned upstream Git blobs; hashes in source-manifest.json."
+    },
+    {
+      "name": "jsPDF",
+      "version": "4.2.1",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/jspdf/-/jspdf-4.2.1.tgz",
+      "npmIntegrity": "sha512-YyAXyvnmjTbR4bHQRLzex3CuINCDlQnBqoSYyjJwTP2x9jDLuKDzy7aKUl0hgx3uhcl7xzg32agn5vlie6HIlQ==",
+      "output": "dist/app/assets/jspdf.umd.min.js",
+      "sha256": "e6551fcdc32f09d6853b2c5126d18d01d9447e0da618a41a11ebeee0f6c20d54",
+      "licenseFile": "dist/app/assets/jsPDF-LICENSE.txt"
     }
   ]
 }

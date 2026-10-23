@@ -1,0 +1,28 @@
+{
+  "measuredAt": "2026-10-23T13:41:10.622Z",
+  "node": "v24.22.1",
+  "platform": "win32",
+  "buildVersion": "64457504f861cc749086",
+  "scope": "Synthetic local inject smoke and payload measurements; not a network/concurrency/user-capacity benchmark",
+  "build": {
+    "files": 67,
+    "precacheEntries": 61,
+    "rawBytes": 3814077,
+    "potentialGzipBytes": 1681693,
+    "gzipEnabledOnReviewServer": false
+  },
+  "sequentialHealthInject": {
+    "requests": 1000,
+    "p50Ms": 0.2964999999999236,
+    "p95Ms": 0.6561999999998989,
+    "maxMs": 68.64609999999993
+  },
+  "backupExample": {
+    "products": 10000,
+    "snapshotBytes": 867867,
+    "deltaBytes": 129,
+    "operations": 1,
+    "diffMs": 77.19480000000021
+  },
+  "rssBytes": 99135488
+}

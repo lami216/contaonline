@@ -10,7 +10,8 @@ export class ServiceStore {
   /** @param {string} filename */
   constructor(filename){
     this.db=new DatabaseSync(filename);this.db.exec('PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;');
-    this.db.exec(`
+    if(this.get("SELECT name FROM sqlite_master WHERE type='table' AND name='migrations'")&&Number(this.get('SELECT MAX(version) AS version FROM migrations').version)>2){this.db.close();throw Error('Unsupported future service schema; database was not replaced');}
+    this.atomic(()=>this.db.exec(`
       CREATE TABLE IF NOT EXISTS migrations(version INTEGER PRIMARY KEY, applied_at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS settings(id TEXT PRIMARY KEY,value TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS recovery_codes(account_id TEXT NOT NULL REFERENCES accounts(id),code_hash TEXT NOT NULL,used_at INTEGER,PRIMARY KEY(account_id,code_hash));
@@ -33,7 +34,7 @@ export class ServiceStore {
       CREATE INDEX IF NOT EXISTS installations_license ON installations(license_id);
       CREATE INDEX IF NOT EXISTS licenses_shop ON licenses(shop_id);
       INSERT OR IGNORE INTO migrations VALUES(1,unixepoch()*1000);
-    `);
+    `));
   }
   /** Dynamic SQL row boundary; route schemas and relational constraints validate writes.
    * @param {string} sql @param {...import('node:sqlite').SQLInputValue} args @returns {any} */

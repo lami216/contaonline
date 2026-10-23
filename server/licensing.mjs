@@ -58,6 +58,7 @@ export class Licensing {
       let installation=this.store.get('SELECT * FROM installations WHERE id=?',proof.installation_id);
       requireValue(!installation||installation.account_id===session.account_id&&installation.license_id===license.id&&installation.fingerprint===proof.fingerprint,'Unavailable installation',403);
       requireValue(!installation||!['rejected','suspended','revoked'].includes(installation.status),'Installation requires administrative review',403);
+      if(installation?.status==='pending-conflict'){this.store.audit(session.account_id,'installation.pending-retry',installation.id,'Existing activity conflict awaits administrative review','',{},now);return {pending:true};}
       if(installation?.status==='approved'&&license.writer_id&&license.writer_id!==installation.id){
         this.store.audit(session.account_id,'installation.superseded-return',installation.id,'Known prior installation requested a new permit; observation remains allowed','',{},now);
         return {pending:true,superseded:true};
@@ -72,7 +73,6 @@ export class Licensing {
         this.store.audit(session.account_id,'installation.pending',installation.id,'Recent conflicting connected activity','',{},now);
         return {pending:true};
       }
-      if(installation.status==='pending-conflict')this.store.run('UPDATE installations SET status=? WHERE id=?','approved',installation.id);
       if(license.writer_id!==installation.id){
         this.store.limit('activation:'+session.account_id,this.policy.activationsPerDay,86400000,now);
         this.store.run('UPDATE licenses SET writer_id=?,generation=generation+1,starts_at=COALESCE(starts_at,?),ends_at=COALESCE(ends_at,?+duration_ms) WHERE id=?',installation.id,now,now,license.id);
