@@ -15,6 +15,7 @@ export async function refreshOfflineStatus(){
     if(cacheComplete&&active&&globalThis.ContaoService?.canWrite())text.textContent=t('جاهز للاستخدام دون إنترنت ضمن صلاحية التصريح','Prêt hors ligne pendant la validité du permis');
     else if(cacheComplete&&active)text.textContent=t('جاهز للعرض والتصدير محليًا','Prêt en lecture et export local');
     else if(!active)text.textContent=t('أكمل التفعيل للبدء؛ التجهيز لا يعني تفعيل الاشتراك','Terminez l’activation ; la préparation ne vaut pas abonnement');
+    if(active&&globalThis.ContaoService?.reconnect){const account=document.createElement('button');account.type='button';account.textContent=t('الحساب والتجديد','Compte et renouvellement');account.onclick=()=>globalThis.ContaoService.reconnect();panel.append(account);}
     if(registration?.waiting){
       const update=document.createElement('button');update.type='button';update.textContent=t('تحديث آمن','Mettre à jour');update.onclick=()=>requestUpdate();panel.append(update);
     }

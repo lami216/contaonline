@@ -1,19 +1,17 @@
-# استلام العمل — المرحلة الأولى
+# contaonline handoff — 2026-10-23
 
-الفرع: feat/phase-1-foundation. commit: الذي يحتوي هذا الملف (git rev-parse HEAD).
+Source: feat/approved-seller-app @ 1efb01fc1cd7bc62670510e57c6158734ad4bf05. Upstream and Android remain read-only. No deployment, VPS/DNS/Nginx changes, merge or visibility change is authorized.
 
-نُقل 52 ملفًا ببصمات المصدر المثبت 1efb01fc1cd7bc62670510e57c6158734ad4bf05؛ لا Android/Expo/مفاتيح/workflows أو تاريخ مصدر.
-اكتملت حزمة Node 24.22.1/Fastify 5.12.7 وlockfile وCI للفحص والبناء فقط، والخطوط المرخصة وSQL المحلي و45 مورد precache.
-نجح محليًا: تحقق المصدر، lint، checkJs strict، baseline الستة، اختبارا البصمة/المورد المفقود، وبناء 48 ملفًا مغلق البداية. لم ينفذ نشر أو خدمة staging.
+Verified remote deliveries:
+- Phase 1: feat/phase-1-foundation, 7a1cc78f0d43cf5aefa03c923f2b201d9105e143; 52 pinned source files, licensed assets, lockfile and baseline. CI success: https://github.com/lami216/contaonline/actions/runs/39873932011
+- PWA batch: feat/phase-2-pwa, ff8c074dd67ba4e04e8f8e52bc5e775baa7d58a6; scoped stores, local export, text/font PDF, gated review server, hashed precache. CI success including 8 Chromium checks and zero detected dependency vulnerabilities: https://github.com/lami216/contaonline/actions/runs/39955617447
 
-القرارات مصححة ومعتمدة في DECISIONS، وآلة التثبيتات والاختبارات معروضة في INSTALLATION_POLICY قبل تنفيذها. لا تعُد إلى اقتراح مراجعة كل مفتاح.
+Current local branch: feat/phase-3-service. Service accounts, SQLite WAL, sessions/CSRF, administrative MFA/bootstrap/recovery, manual payment and subscription administration, Web Crypto activation and installation policy core are implemented. See SERVICE_REVIEW.md. Eleven local tests plus all six upstream baseline scripts, lint, typecheck and build passed. A real race through two independent SQLite connections produced one period, one writer and one pending request. Real service browser coverage is added to CI; do not assume its result before checking.
 
-الخطوة التالية: التحقق من CI للـcommit المدفوع، ثم المرحلة الثانية: تكييف PWA وتصدير محلي وPDF نصي وتحديث آمن، خلف حاجز staging حقيقي يشمل كل المسارات. بعده backend والتفعيل والإدارة ثم النشاط والنسخ الاختياري. المصدر المحاسبي يبقى مرجعًا ثابتًا وتعديلات الويب منفصلة.
+The execution environment briefly disconnected then returned with files intact. Remote PWA SHA differs from its local commit because GitHub API was used after git network failed. Never force push. Read the current remote head and use its tree/parent for subsequent delivery; preserve prior remote checkpoint documents.
 
-لم ينفذ: تصريح ويب/خدمة حسابات/MFA/نسخ سحابي/حذف احتفاظ/سباقات/قبول iPhone. لا تعتبر هذه الدفعة التطبيق الكامل.
+Next: verify service CI, then implement optional cloud backup with separate entitlement and explicit consent, atomic local outbox, base/deltas, independent writer generation, durable ACK, tenant isolation, restore preview and clean-install recovery, 30-day retention/download/notice and audited deletion. Local-only mode must never upload accounting content.
 
-خصوصية الريبو: عام، والاقتراح جعله خاصًا؛ لا تغيير visibility دون إذن. لا VPS/DNS/Nginx أو إنتاج دون إذن منفصل.
+Remaining acceptance: full PWA update races, real storage exhaustion, Arabic PDF visual QA, WebKit and physical iPhone, operating recovery/load measurement and production hardening. Review metadata currently has bounded initial lists; pagination needs work before expanded use. README, architecture/security/test/operations docs need reconciliation as phases finish.
 
-## عمل جارٍ — المرحلة الثانية (غير مدفوع بعد)
-الفرع المحلي feat/phase-2-pwa فوق commit المرحلة الأولى البعيد 7a1cc78f0d43cf5aefa03c923f2b201d9105e143. CI المرحلة الأولى ناجح: https://github.com/lami216/contaonline/actions/runs/39873932011 .
-أضيفت adaptations منفصلة وبناء PWA وخادم staging مغلق لكل المسارات، وتصريح client/مفتاح تثبيت وقراءة بعد الانتهاء ومولد PDF نصي وتنزيل محلي. يجري إصلاح الأنواع ثم اختبار البناء والمتصفح؛ لم يثبت نجاح المرحلة الثانية بعد. لا تنشر ولا تعتبر backend/MFA/نسخ سحابي منفذة.
+This is not a complete production application. Readiness remains 503; start rejects NODE_ENV=production. Recommend a private repository without changing visibility. No real customer records, production databases or private issuing keys belong in Git.

@@ -1,0 +1,34 @@
+import { chromium } from '@playwright/test';
+import assert from 'node:assert/strict';
+import { mkdtemp, rm } from 'node:fs/promises';
+import path from 'node:path';
+import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
+import { randomBytes, generateKeyPairSync } from 'node:crypto';
+import { ServiceStore } from '../server/store.mjs';
+import { Licensing } from '../server/licensing.mjs';
+import { registerServiceApi } from '../server/api.mjs';
+import { createApp, stagingDigest } from '../server/app.mjs';
+import { passwordHash, token, encrypt, otpAt } from '../server/security.mjs';
+const dir=await mkdtemp(path.join(tmpdir(),'contaonline-browser-')),store=new ServiceStore(path.join(dir,'service.sqlite'));
+const password=token(),review=token(),totp=randomBytes(20),encryptionKey=randomBytes(32),now=Date.now();
+const hash=await passwordHash(password);
+store.run('INSERT INTO accounts(id,username,password_hash,role,totp_encrypted,created_at) VALUES(?,?,?,?,?,?)','fixture-admin','fixture-admin',hash,'owner',encrypt(totp.toString('base64url'),encryptionKey),now);
+store.run('INSERT INTO accounts(id,username,password_hash,role,created_at) VALUES(?,?,?,?,?)','fixture-customer','fixture-customer',hash,'customer',now);
+store.run('INSERT INTO shops VALUES(?,?,?,?)','fixture-shop','fixture-customer','متجر الاختبار','مالك الاختبار');
+store.run('INSERT INTO plans VALUES(?,?,?,?,?,?,?,1)','fixture-plan','Fixture app','app',86400000,10000,'MRU',null);
+store.issueLicense('fixture-admin',{shopId:'fixture-shop',planId:'fixture-plan',reason:'Synthetic browser fixture',paymentReference:'fixture-payment'});
+const pair=generateKeyPairSync('ec',{namedCurve:'prime256v1'}),kid='browser-fixture',licensing=new Licensing(store,{privateJwk:pair.privateKey.export({format:'jwk'}),kid,publicKeys:{[kid]:pair.publicKey.export({format:'jwk'})}});
+const app=await createApp({distDirectory:fileURLToPath(new URL('../dist',import.meta.url)),stagingHash:stagingDigest('review',review),registerApi:app=>registerServiceApi(app,{store,licensing,encryptionKey,secureCookies:false,now:()=>now})});
+const base=await app.listen({host:'127.0.0.1',port:0}),browser=await chromium.launch({headless:true,...(process.env.CHROME_EXECUTABLE?{executablePath:process.env.CHROME_EXECUTABLE}:{})});
+try{
+  const context=await browser.newContext({httpCredentials:{username:'review',password:review},viewport:{width:393,height:852}}),page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));
+  await page.goto(base+'/admin/');await page.locator('[name="username"]').fill('fixture-admin');await page.locator('[name="password"]').fill(password);await page.locator('[name="otp"]').fill(otpAt(totp,Math.floor(now/30000)));await page.locator('#admin-login button').click();await page.locator('#workspace').waitFor({state:'visible'});await page.locator('#records details').first().waitFor();
+  assert.equal(await page.locator('#actions details').count(),10);assert.equal((await page.locator('#records').textContent()).includes('password_hash'),false);console.log('PASS real administrative MFA login renders persisted metadata without password hashes');
+  const customer=await browser.newContext({httpCredentials:{username:'review',password:review},viewport:{width:393,height:852}}),shop=await customer.newPage();shop.on('pageerror',error=>errors.push(error.message));
+  await shop.goto(base+'/app/');await shop.locator('#service-login [name="username"]').fill('fixture-customer');await shop.locator('#service-login [name="password"]').fill(password);await shop.locator('#service-login button').click();await shop.locator('#site-auth-form').waitFor();assert.equal(await shop.locator('#site-auth-form [name="shop"]').count(),0);
+  await shop.locator('#site-auth-form [name="username"]').fill('local-owner');await shop.locator('#site-auth-form [name="password"]').fill('local-fixture-password');await shop.locator('[data-action="site:setup"]').click();await shop.waitForFunction(()=>globalThis.ContaoRuntime&&!document.querySelector('#site-auth-form'));
+  const license=store.get('SELECT * FROM licenses LIMIT 1');assert.ok(license.starts_at);assert.equal(license.generation,1);console.log('PASS real service login, Web Crypto challenge and signed server permit open local owner setup');
+  await customer.setOffline(true);await shop.reload();await shop.waitForFunction(()=>globalThis.ContaoRuntime&&globalThis.ContaoService?.canWrite());console.log('PASS service session is independent of offline shop use');
+  assert.deepEqual(errors,[]);await customer.close();await context.close();
+}finally{await browser.close();await app.close();store.close();assert.ok(dir.startsWith(tmpdir()+path.sep));await rm(dir,{recursive:true,force:true});}

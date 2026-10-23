@@ -35,12 +35,15 @@ export async function build(root = ROOT) {
   if (boundary < 0) throw new Error('PDF adaptation boundary changed');
   await writeFile(path.join(appRoot, 'report-output.js'), reports.slice(0, boundary) + "export {reportPdf} from './web-report-pdf.js';\n");
   for (const entry of await readdir(path.join(root, 'web'))) {
-    if (entry === 'sw-template.js' || entry.startsWith('landing.')) continue;
+    if (entry === 'sw-template.js' || entry.startsWith('landing.') || entry.startsWith('admin.')) continue;
     await cp(path.join(root, 'web', entry), path.join(appRoot, entry));
   }
   await cp(path.join(root, 'shared/permit.mjs'), path.join(appRoot, 'permit.js'));
   for (const name of ['landing.css', 'landing.js']) await cp(path.join(root, 'web', name), path.join(output, name));
   await cp(path.join(root, 'web/landing.html'), path.join(output, 'index.html'));
+  await mkdir(path.join(output,'admin'),{recursive:true});
+  await cp(path.join(root,'web/admin.html'),path.join(output,'admin/index.html'));
+  await cp(path.join(root,'web/admin.js'),path.join(output,'admin/admin.js'));
   await cp(path.join(root, 'node_modules/jspdf/dist/jspdf.umd.min.js'), path.join(appRoot, 'assets/jspdf.umd.min.js'));
   await cp(path.join(root, 'node_modules/jspdf/LICENSE'), path.join(appRoot, 'assets/jsPDF-LICENSE.txt'));
   const { default: sharp } = await import('sharp');

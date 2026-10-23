@@ -1,0 +1,34 @@
+const $=id=>document.getElementById(id),message=$('message');let csrf=null,overview=null,role=null;
+const node=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text??'');return n;};
+async function api(path,body){const response=await fetch(path,{method:body?'POST':'GET',credentials:'same-origin',headers:{...(body?{'content-type':'application/json','x-csrf-token':csrf||''}:{})},...(body?{body:JSON.stringify(body)}:{})});const result=await response.json();if(!response.ok)throw Error(result.message||'تعذر إكمال الطلب');return result;}
+const definitions=[
+ ['إنشاء عميل ومحل','accounts',[['username','اسم الدخول'],['customerName','اسم العميل'],['storeName','اسم المحل']]],
+ ['إنشاء باقة','plans',[['name','اسم الباقة'],['kind','نوع الخدمة'],['durationDays','مدة الاشتراك بالأيام','number'],['priceMinor','السعر بأصغر وحدة نقدية','number'],['currency','رمز العملة مثل MRU'],['offlineDays','حد الأوفلاين بالأيام، فارغ لنهاية الاشتراك','nullable-number']]],
+ ['إصدار ترخيص','licenses',[['shopId','معرف المحل'],['planId','معرف الباقة'],['paymentReference','مرجع الدفع اليدوي']]],
+ ['تجديد','renew',[['licenseId','الترخيص'],['durationDays','المدة المضافة بالأيام','number'],['paymentReference','مرجع الدفع اليدوي']]],
+ ['حالة الترخيص','license-status',[['licenseId','معرف الترخيص'],['status','approved أو suspended أو blocked'],['paymentReference','مرجع القرار/الدفع']]],
+ ['قرار تثبيت','installations',[['installationId','معرف التثبيت'],['action','allow / reject / suspend / resume / revoke'],['paymentReference','مرجع القرار']]],
+ ['تسجيل دفع','payments',[['licenseId','الترخيص'],['amountMinor','المبلغ بأصغر وحدة نقدية','number'],['currency','رمز العملة'],['paidOn','تاريخ الدفع','date'],['reference','مرجع الدفع'],['note','ملاحظة الدفع']]],
+ ['تعطيل/تفعيل حساب','account-status',[['accountId','معرف الحساب'],['disabled','تعطيل الحساب','boolean']]],
+ ['إعادة تعيين وصول العميل','reset-access',[['accountId','معرف العميل']]],
+ ['رابط APK الرسمي','public-settings',[['apkEnabled','تفعيل التنزيل','boolean'],['apkUrl','رابط HTTPS الموثوق'],['apkVersion','رقم الإصدار']]]
+];
+function render(){
+ $('records').replaceChildren();const query=$('search').value.toLocaleLowerCase();
+ for(const [kind,rows]of Object.entries(overview||{})){const section=node('section'),heading=node('h2',kind);section.append(heading);for(const row of rows.filter(row=>!query||JSON.stringify(row).toLocaleLowerCase().includes(query))){const details=node('details'),summary=node('summary',row.username||row.name||row.id||row.action);details.append(summary);const dl=node('dl');for(const [key,value]of Object.entries(row)){dl.append(node('dt',key),node('dd',typeof value==='object'?JSON.stringify(value):value));}details.append(dl);section.append(details);} $('records').append(section);}
+}
+async function refresh(){overview=await api('/api/admin/overview');render();actions();}
+function fieldInput(key,type){
+ const source={accountId:'accounts',shopId:'shops',planId:'plans',licenseId:'licenses',installationId:'installations'}[key];
+ const choices=source?(overview?.[source]||[]).map(row=>[row.id,row.username||row.name||((overview?.shops||[]).find(shop=>shop.id===row.shop_id||shop.id===(overview?.licenses||[]).find(l=>l.id===row.license_id)?.shop_id)?.name||'')+' · '+row.id.slice(0,8)]):key==='kind'?[['app','تشغيل التطبيق'],['backup','النسخ السحابي']]:key==='status'?[['approved','فعال'],['suspended','معلّق'],['blocked','محظور']]:key==='action'?[['allow','اعتماد ككاتب'],['reject','رفض الطلب'],['suspend','تعليق'],['resume','فك التعليق'],['revoke','إلغاء الاعتماد']]:null;
+ const input=node(choices?'select':'input');if(choices)for(const [value,label]of choices){const option=node('option',label);option.value=value;input.append(option);}else input.type=type==='boolean'?'checkbox':type==='number'||type==='nullable-number'?'number':type==='date'?'date':'text';return input;
+}
+function actions(){
+ $('actions').replaceChildren();if(role!=='owner')return;
+ for(const [title,path,fields]of definitions){const details=node('details'),summary=node('summary',title),form=node('form');details.append(summary);
+  for(const [key,label,type]of [...fields,['reason','سبب الإجراء']]){const labelNode=node('label',label.replace('معرف ','')),input=fieldInput(key,type);input.name=key;input.required=type!=='boolean'&&type!=='nullable-number'&&!['apkUrl','apkVersion'].includes(key);labelNode.append(input);form.append(labelNode);}
+  const button=node('button','مراجعة واعتماد');form.append(button);form.onsubmit=async e=>{e.preventDefault();if(!confirm('اعتماد هذا الإجراء وتسجيل سببه في سجل التدقيق؟'))return;button.disabled=true;try{const data={};for(const input of form.elements){if(!input.name)continue;const field=fields.find(f=>f[0]===input.name),type=field?.[2];data[input.name]=type==='boolean'?input.checked:type==='number'?Number(input.value):type==='nullable-number'?(input.value?Number(input.value):null):input.value;}if('durationDays'in data){data.durationMs=data.durationDays*86400000;delete data.durationDays;}if('offlineDays'in data){data.offlineMs=data.offlineDays===null?null:data.offlineDays*86400000;delete data.offlineDays;}if('paidOn'in data){data.paidAt=Date.parse(data.paidOn+'T12:00:00Z');delete data.paidOn;}const result=await api('/api/admin/'+path,data);message.textContent=result.initialPassword?'بيانات وصول تظهر مرة واحدة. انقلها بشكل خاص واطلب تغييرها: '+result.initialPassword:'تم حفظ الإجراء';form.reset();await refresh();}catch(error){message.textContent=error.message;}finally{button.disabled=false;}};details.append(form);$('actions').append(details);
+ }
+}
+$('admin-login').onsubmit=async event=>{event.preventDefault();const form=event.currentTarget,button=form.querySelector('button');button.disabled=true;try{const result=await api('/api/session/login',Object.fromEntries(new FormData(form)));csrf=result.csrfToken;role=result.account.role;if(!['owner','support'].includes(role))throw Error('هذا الحساب ليس إداريًا');form.reset();$('login').hidden=true;$('workspace').hidden=false;message.textContent='';actions();await refresh();}catch(error){message.textContent=error.message;}finally{button.disabled=false;}};
+$('search').oninput=render;$('logout').onclick=async()=>{try{await api('/api/session/logout',{});location.reload();}catch(error){message.textContent=error.message;}};
