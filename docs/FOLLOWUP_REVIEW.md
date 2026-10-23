@@ -19,3 +19,5 @@ The next browser correction reopens the offline app after the first sale (invoic
 Storage preparation now distinguishes opening/ready/failed shop storage. A failed IndexedDB open cannot advertise offline readiness, and a fresh-page retry must recover the previously saved state. Missing precache resources have a separate failure test. Browser installation has a bounded CI step; external dependency-download stalls are not recorded as browser passes.
 
 The cancelled run 39969464836 stalled on the hosted runner's azure.archive.ubuntu.com package downloads before either browser suite. CI now pins Ubuntu 24.04 and uses Ubuntu's standard archive mirror for that dependency step, retaining both browser gates and the six-minute bound.
+
+Run 39971522820 exposed a real boot-order regression in the new readiness tracking: the runtime object was initialized after top-level awaited boot. Its initialization now precedes boot, so both success and failure can record storage state. Local full checks pass; the existing browser activation/storage tests remain mandatory.
