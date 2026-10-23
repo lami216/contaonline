@@ -83,6 +83,10 @@ try{
   assert.deepEqual(expired,{canWrite:false,rejected:true,hasData:true});pass('expired permit keeps local data and blocks durable accounting writes');
   const scope=await page.evaluate(async()=>{const s=await import('/app/service-store.js');const identities=await Promise.all([s.identityFor('other-account'),s.identityFor('other-account')]);return {same:identities[0].id===identities[1].id,extractable:identities[0].privateKey.extractable};});
   assert.deepEqual(scope,{same:true,extractable:false});assert.deepEqual(errors,[]);pass('concurrent tabs share one nonextractable installation identity without browser errors');
+  await page.addInitScript(()=>{const original=indexedDB.open.bind(indexedDB);indexedDB.open=(name,version)=>{if(String(name).startsWith('contaonline-shop|'))throw new DOMException('Synthetic shop storage failure','QuotaExceededError');return original(name,version);};});
+  await page.reload();await page.waitForFunction(()=>globalThis.ContaoRuntime?.storageState==='failed');await page.waitForFunction(()=>document.querySelector('[data-offline-status]')?.textContent.includes('لم يكتمل'));
+  assert.equal((await page.locator('[data-offline-status]').textContent()).includes('جاهز'),false);
+  const recoveredPage=await context.newPage();await recoveredPage.goto(base+'/app/');await recoveredPage.waitForFunction(()=>globalThis.ContaoRuntime?.storageState==='ready');assert.equal(await recoveredPage.evaluate(async()=>{const {WebShopDatabase}=await import('/app/web-database.js');const db=await new WebShopDatabase().open();const state=await db.load();db.db.close();return state.branding;}),'اختبار حفظ أوفلاين');await recoveredPage.close();pass('shop storage failure does not claim offline readiness or replace the durable shop');
   await context.close();failPrecache=true;
   const broken=await browser.newContext({httpCredentials:{username,password}}),brokenPage=await broken.newPage();await brokenPage.goto(base+'/');
   const failedInstall=await brokenPage.evaluate(async()=>{

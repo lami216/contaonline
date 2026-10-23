@@ -12,8 +12,9 @@ export async function refreshOfflineStatus(){
   try{
     await writeService('storage-probe',{at:Date.now()});
     const active=await currentActivation();
-    if(cacheComplete&&active&&globalThis.ContaoService?.canWrite())text.textContent=t('جاهز للاستخدام دون إنترنت ضمن صلاحية التصريح','Prêt hors ligne pendant la validité du permis');
-    else if(cacheComplete&&active)text.textContent=t('جاهز للعرض والتصدير محليًا','Prêt en lecture et export local');
+    if(globalThis.ContaoRuntime?.storageState==='failed')text.textContent=t('لم يكتمل فتح تخزين المحل؛ بياناتك لم تُستبدل.','Stockage du magasin indisponible ; aucune donnée remplacée.');
+    else if(cacheComplete&&active&&globalThis.ContaoRuntime?.storageState==='ready'&&globalThis.ContaoService?.canWrite())text.textContent=t('جاهز للاستخدام دون إنترنت ضمن صلاحية التصريح','Prêt hors ligne pendant la validité du permis');
+    else if(cacheComplete&&active&&globalThis.ContaoRuntime?.storageState==='ready')text.textContent=t('جاهز للعرض والتصدير محليًا','Prêt en lecture et export local');
     else if(!active)text.textContent=t('أكمل التفعيل للبدء؛ التجهيز لا يعني تفعيل الاشتراك','Terminez l’activation ; la préparation ne vaut pas abonnement');
     if(active&&globalThis.ContaoService?.reconnect){const account=document.createElement('button');account.type='button';account.textContent=t('الحساب والتجديد','Compte et renouvellement');account.onclick=()=>globalThis.ContaoService.reconnect();panel.append(account);}
     if(active&&globalThis.ContaoService?.openBackupPanel){const backup=document.createElement('button');backup.type='button';backup.textContent=t('النسخ الاختياري','Sauvegarde facultative');backup.onclick=()=>globalThis.ContaoService.openBackupPanel().catch(error=>globalThis.ContaoPwa.notice(error.message));panel.append(backup);}

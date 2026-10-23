@@ -95,7 +95,7 @@ async function chooseLicense(licenses){
     dialog.addEventListener('cancel',()=>resolve(null));dialog.addEventListener('close',()=>dialog.remove(),{once:true});document.body.append(dialog);dialog.showModal();
   });
 }
-globalThis.ContaoPwa={notice,prepare:preparePwa};
+globalThis.ContaoPwa={notice,prepare:preparePwa,refresh:refreshOfflineStatus};
 async function connectedPresence(){
   if(connecting||!activation||!navigator.onLine||document.visibilityState!=='visible')return;
   connecting=true;
