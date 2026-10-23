@@ -25,7 +25,7 @@ export function adaptApp(source){
   source=once(source,"if(action==='site:activation'){savePosDraft();NativeHost.openActivation();return}","if(action==='site:activation'){location.assign('/app/');return}");
   source=once(source,"if(changed||namesChanged)","if((changed||namesChanged)&&globalThis.ContaoService.canWrite())");
   source=once(source,"if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{})","globalThis.ContaoPwa.prepare().catch(()=>{})");
-  source += "\n globalThis.ContaoRuntime={isBusy:()=>busy||!ready,saveBeforeUpdate:()=>{if(busy||!ready||globalThis.ContaoBackup?.isBusy?.())return false;try{if(actor&&cart.length){const key='alkarna-pos-draft:'+actor.id,value=JSON.stringify(posDraftSnapshot());localStorage.setItem(key,value);if(localStorage.getItem(key)!==value)return false;}else savePosDraft();return true}catch{return false}}};\n";
+  source += "\n globalThis.ContaoRuntime={isAuthenticated:()=>!!actor,backupAllowed:()=>!!actor&&can('settings.backup.manage'),isBusy:()=>busy||!ready,saveBeforeUpdate:()=>{if(busy||!ready||globalThis.ContaoBackup?.isBusy?.())return false;try{if(actor&&cart.length){const key='contaonline-pos-draft:'+encodeURIComponent(globalThis.ContaoService.scope.accountId)+':'+encodeURIComponent(globalThis.ContaoService.scope.shopId)+':'+actor.id,value=JSON.stringify(posDraftSnapshot());localStorage.setItem(key,value);if(localStorage.getItem(key)!==value)return false;}else savePosDraft();return true}catch{return false}}};\n";
   if(source.includes("fetch('/api/export'"))throw Error('Remote export must not remain in the web build');
   return source;
 }

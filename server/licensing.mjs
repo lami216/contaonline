@@ -7,11 +7,13 @@ export class Licensing {
   /** @param {import('./store.mjs').ServiceStore} store @param {{privateJwk:import('node:crypto').JsonWebKey,kid:string,publicKeys:Record<string,JsonWebKey>,policy?:Partial<typeof defaultPolicy>}} options */
   constructor(store,{privateJwk,kid,publicKeys,policy={}}){
     this.store=store;this.key=createPrivateKey({key:privateJwk,format:'jwk'});this.kid=kid;this.publicKeys=publicKeys;this.policy={...defaultPolicy,...policy};
+    requireValue(typeof kid==='string'&&kid.length>0&&!!publicKeys[kid]&&Object.values(publicKeys).every(key=>key.kty==='EC'&&key.crv==='P-256'&&!key.d),'Only public verification keys may be published');
     for(const value of Object.values(this.policy))requireValue(Number.isSafeInteger(value)&&value>0,'Invalid installation policy');
   }
-  /** @param {{account_id:string,token_hash:string}} session @param {{licenseId:string,installationId:string,publicJwk:JsonWebKey,purpose?:string}} input @param {number} now */
-  async challenge(session,{licenseId,installationId,publicJwk,purpose='activate'},now=Date.now()){
-    requireValue(['activate','presence'].includes(purpose)&&typeof installationId==='string'&&/^[a-zA-Z0-9-]{10,100}$/.test(installationId),'Invalid installation');
+  /** @param {{account_id:string,token_hash:string}} session @param {{licenseId:string,installationId:string,publicJwk:JsonWebKey,purpose?:string,context?:string}} input @param {number} now */
+  async challenge(session,{licenseId,installationId,publicJwk,purpose='activate',context=''},now=Date.now()){
+    requireValue(['activate','presence','backup'].includes(purpose)&&typeof installationId==='string'&&/^[a-zA-Z0-9-]{10,100}$/.test(installationId),'Invalid installation');
+    requireValue(purpose!=='backup'||/^[a-f0-9]{64}$/.test(context),'Backup request digest required');
     const license=this.store.scope(licenseId,session.account_id);requireValue(license,'Unavailable license',403);
     requireValue(publicJwk&&publicJwk.kty==='EC'&&publicJwk.crv==='P-256'&&!publicJwk.d&&/^[A-Za-z0-9_-]{43}$/.test(publicJwk.x||'')&&/^[A-Za-z0-9_-]{43}$/.test(publicJwk.y||''),'Invalid installation public key');
     // Import validates that this is an actual curve point, not merely a shaped JSON value.
@@ -21,7 +23,7 @@ export class Licensing {
     if(purpose==='activate')requireValue(license.kind==='app'&&license.status==='approved'&&(license.starts_at===null||license.starts_at<=now)&&(license.ends_at===null||license.ends_at>now),'License not active',403);
     else requireValue(existing&&existing.status==='approved','Installation observation unavailable',403);
     this.store.atomic(()=>this.store.limit('challenge:'+session.account_id,30,60000,now));
-    const id=randomUUID(),message=canonical({id,nonce:token(),session:session.token_hash,account:session.account_id,licenseId,installationId,purpose,expiresAt:now+120000});
+    const id=randomUUID(),message=canonical({id,nonce:token(),session:session.token_hash,account:session.account_id,licenseId,installationId,purpose,context,expiresAt:now+120000});
     this.store.run('INSERT INTO challenges VALUES(?,?,?,?,?,?,?,?,?,NULL)',id,session.account_id,session.token_hash,purpose,licenseId,installationId,JSON.stringify(publicJwk),message,now+120000);
     this.store.run('DELETE FROM challenges WHERE expires_at<?',now-86400000);
     return {id,message,expiresAt:now+120000};
@@ -108,7 +110,8 @@ export class Licensing {
   /** @param {{account_id:string}} session @param {string} licenseId @param {string} installationId @param {number} generation @param {number} now */
   authorizeUpload(session,licenseId,installationId,generation,now=Date.now()){
     const l=this.store.scope(licenseId,session.account_id),i=this.store.get('SELECT * FROM installations WHERE id=? AND account_id=?',installationId,session.account_id);
-    requireValue(l&&i&&i.license_id===l.id&&i.status==='approved'&&l.status==='approved'&&l.ends_at>now&&l.writer_id===i.id&&l.generation===generation,'Writer authority unavailable',403);
+    // Upload authority is independent of app expiry; callers must check the separate backup entitlement.
+    requireValue(l&&i&&i.license_id===l.id&&i.status==='approved'&&l.status==='approved'&&l.writer_id===i.id&&l.generation===generation,'Writer authority unavailable',403);
     requireValue(!this.store.get('SELECT id FROM incidents WHERE license_id=? AND resolved_at IS NULL',l.id),'Writer authority suspended for review',409);
     return l;
   }

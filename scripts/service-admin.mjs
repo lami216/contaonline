@@ -4,11 +4,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ServiceStore } from '../server/store.mjs';
 import { passwordHash, token, encrypt, digest, base32 } from '../server/security.mjs';
+import { Licensing } from '../server/licensing.mjs';
+import { Backups } from '../server/backups.mjs';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const directory=path.resolve(process.env.SERVICE_PRIVATE_DIR||path.join(root,'private/service'));
 if([path.join(root,'dist'),path.join(root,'approved-runtime'),path.join(root,'web')].some(p=>directory===p||directory.startsWith(p+path.sep)))throw Error('Private service data must be outside application assets');
 const [command,username]=process.argv.slice(2);
-if(!['init','migrate','recover-admin'].includes(command))throw Error('Usage: node scripts/service-admin.mjs init <admin-username> | migrate | recover-admin <admin-username>');
+if(!['init','migrate','recover-admin','retention-dry-run','retention-apply'].includes(command))throw Error('Usage: init <admin-username> | migrate | recover-admin <admin-username> | retention-dry-run | retention-apply');
 if(command==='init'){
   if(!username||!/^[a-z0-9._-]{3,80}$/.test(username))throw Error('Supply an explicit admin username');
   await mkdir(directory,{recursive:true,mode:0o700});
@@ -35,5 +37,5 @@ if(command==='init'){
   }finally{store.close();}
 }else{
   const config=JSON.parse(await readFile(process.env.SERVICE_CONFIG_FILE||path.join(directory,'config.json'),'utf8'));
-  const store=new ServiceStore(config.database);store.close();console.log('Migrations complete.');
+  const store=new ServiceStore(config.database);try{const licensing=new Licensing(store,config),backups=new Backups(store,licensing,config.backupDirectory);if(command.startsWith('retention-'))console.log(JSON.stringify(backups.prune({dryRun:command!=='retention-apply'})));else console.log('Migrations complete.');}finally{store.close();}
 }

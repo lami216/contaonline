@@ -1,5 +1,7 @@
 import { currentActivation, identityFor, installPermit, proof, readService, writeService } from './service-store.js';
 import { preparePwa, refreshOfflineStatus } from './pwa.js';
+import { canonical } from './permit.js';
+import { openBackupPanel, startCloud } from './cloud.js';
 const language=()=>localStorage.getItem('alkarna-site-language')==='fr'?'fr':'ar';
 const t=(ar,fr)=>language()==='fr'?fr:ar;
 const root=document.getElementById('phone');
@@ -16,13 +18,13 @@ async function api(url,body){
 async function requireWrite(scope){
   const active=await currentActivation();
   if(!active||active.payload.accountId!==scope.accountId||active.payload.shopId!==scope.shopId)throw Error(t('تغيّر الحساب المفتوح. أعد فتح المحل.','Le compte actif a changé. Rouvrez le magasin.'));
-  const record=active.record,now=Date.now(),previous=record.maxWallMs||active.payload.issuedAt;
-  if(now<previous-120000){record.restriction='clock-rollback';await writeService('permit:'+active.payload.accountId,record);}
+  const record=active.record,clientNow=Date.now(),now=clientNow+(record.clockOffsetMs||0),previous=record.maxWallMs||active.payload.issuedAt;
+  if(clientNow<(record.lastClientWallMs||clientNow)-120000){record.restriction='clock-rollback';await writeService('permit:'+active.payload.accountId,record);}
   activation={...active,record};
   if(record.restriction||!active.canWrite)throw Error(t('الترخيص للعرض والتصدير فقط. اتصل بالخدمة للتجديد أو المراجعة.','Licence en lecture et export uniquement. Connectez-vous pour renouveler ou vérifier.'));
-  record.maxWallMs=Math.max(now,previous);await writeService('permit:'+active.payload.accountId,record);activation={...active,record};
+  record.maxWallMs=Math.max(now,previous);record.lastClientWallMs=Math.max(clientNow,record.lastClientWallMs||clientNow);await writeService('permit:'+active.payload.accountId,record);activation={...active,record};
 }
-function canWrite(){return !!activation?.canWrite&&!activation.record.restriction&&Date.now()>=activation.record.maxWallMs-120000&&Math.max(Date.now(),activation.record.maxWallMs)<activation.payload.expiresAt;}
+function canWrite(){return !!activation?.canWrite&&!activation.record.restriction&&Date.now()>=(activation.record.lastClientWallMs||Date.now())-120000&&Math.max(Date.now()+(activation.record.clockOffsetMs||0),activation.record.maxWallMs)<activation.payload.expiresAt;}
 const readActions=new Set(['site:login','site:logout','site:account-menu','site:support','site:audit','site:backup','backup:save','site:previous-backup','site:export','site:export-excel','site:export-pdf','site:export-print','site:print','close','back','cancel','print']);
 async function allowAction(action,permissionFor){
   if(canWrite()){try{await requireWrite(globalThis.ContaoService.scope);return true;}catch(error){notice(error.message);}}
@@ -36,10 +38,20 @@ async function allowAction(action,permissionFor){
 async function bootShop(active){
   if(shopBooted){location.reload();return;}shopBooted=true;
   activation=active;
-  const scope={accountId:active.payload.accountId,shopId:active.payload.shopId};
-  globalThis.ContaoService={scope,canWrite,requireWrite,allowAction,reconnect:()=>renderGate(),setupIdentity:()=>({name:activation.payload.customerName,shop:activation.payload.storeName})};
+  const scope={accountId:active.payload.accountId,shopId:active.payload.shopId,licenseId:active.payload.licenseId,installationId:active.identity.id};
+  async function serviceApi(url,body){
+    if(!csrf){const response=await fetch('/api/session/resume',{credentials:'same-origin',headers:{'x-session-resume':'1'}});if(!response.ok)throw Error(t('أعد تسجيل الدخول بحساب الخدمة للنسخ؛ العمل المحلي مستقل.','Reconnectez le compte de service pour les sauvegardes ; le local reste indépendant.'));const session=await response.json();if(session.account?.id!==scope.accountId)throw Error('Service account scope changed');csrf=session.csrfToken;}
+    return api(url,body);
+  }
+  async function backupRequest(operation,payload){
+    const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(canonical({operation,payload}))),context=[...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,'0')).join('');
+    const challenge=await serviceApi('/api/activation/challenge',{licenseId:scope.licenseId,installationId:scope.installationId,publicJwk:active.identity.publicJwk,purpose:'backup',context});
+    return serviceApi('/api/backup/dispatch',{challengeId:challenge.id,signature:await proof(active.identity,challenge.message),operation,payload});
+  }
+  globalThis.ContaoService={scope,canWrite,requireWrite,allowAction,serviceApi,backupRequest,openBackupPanel,reconnect:()=>renderGate(),setupIdentity:()=>({name:activation.payload.customerName,shop:activation.payload.storeName})};
   await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='./engine.js';script.onload=resolve;script.onerror=()=>reject(Error('تعذّر فتح ملفات التطبيق'));document.body.append(script);});
   await import('./app.js');
+  startCloud();
   await refreshOfflineStatus();
   if(!canWrite())notice(t('وضع العرض والتصدير فقط؛ بيانات المحل محفوظة.','Mode lecture et export ; les données restent conservées.'));
 }
@@ -68,7 +80,7 @@ function renderGate(error=''){
       const challenge=await api('/api/activation/challenge',{licenseId:license.id,installationId:identity.id,publicJwk:identity.publicJwk});
       const result=await api('/api/activation/enroll',{challengeId:challenge.id,signature:await proof(identity,challenge.message)});
       if(result.pending)throw Error(t('يوجد نشاط حديث متعارض؛ الطلب معلّق لمراجعة الإدارة.','Une activité récente entre en conflit. La demande attend une vérification.'));
-      await installPermit(result.permit,result.keys,identity);await bootShop(await currentActivation());
+      await installPermit(result.permit,result.keys,identity,result.serverTime);await bootShop(await currentActivation());
     }catch(failure){message.textContent=failure.message;}finally{password.value='';submit.disabled=false;}
   };
 }
@@ -90,7 +102,7 @@ async function connectedPresence(){
     if(status.licenseStatus!=='approved'||status.installationStatus!=='approved'){
       activation.record.restriction='server-restriction';await writeService('permit:'+activation.identity.accountId,activation.record);await refreshOfflineStatus();return;
     }
-    activation.record.maxWallMs=Math.max(activation.record.maxWallMs||0,status.serverTime);await writeService('permit:'+activation.identity.accountId,activation.record);
+    activation.record.maxWallMs=Math.max(activation.record.maxWallMs||0,status.serverTime);activation.record.clockOffsetMs=status.serverTime-Date.now();activation.record.lastClientWallMs=Date.now();await writeService('permit:'+activation.identity.accountId,activation.record);
     const challenge=await api('/api/activation/challenge',{...input,publicJwk:activation.identity.publicJwk,purpose:'presence'});
     const result=await api('/api/activity/heartbeat',{challengeId:challenge.id,signature:await proof(activation.identity,challenge.message)});
     if(result.reviewRequired)notice(t('رُصد نشاط متداخل يحتاج مراجعة. رفع النسخ معلق؛ بياناتك المحلية محفوظة.','Activité simultanée à vérifier. Envoi des sauvegardes suspendu ; données locales conservées.'));

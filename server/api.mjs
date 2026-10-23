@@ -2,11 +2,12 @@ import cookie from '@fastify/cookie';
 import { randomUUID, createHmac } from 'node:crypto';
 import { passwordHash, passwordMatches, token, digest, decrypt, verifyOtp } from './security.mjs';
 import { requireValue } from './store.mjs';
+import { canonical } from '../shared/permit.mjs';
 const string={type:'string',minLength:1,maxLength:300},reason={type:'string',minLength:3,maxLength:1000},integer={type:'integer',minimum:0,maximum:Number.MAX_SAFE_INTEGER};
 /** @param {Record<string,object>} properties @param {string[]} required */
 const object=(properties,required=Object.keys(properties))=>({type:'object',properties,required,additionalProperties:false});
-/** @param {import('fastify').FastifyInstance} app @param {{store:import('./store.mjs').ServiceStore,licensing:import('./licensing.mjs').Licensing,encryptionKey:Buffer,secureCookies?:boolean,now?:()=>number}} options */
-export async function registerServiceApi(app,{store,licensing,encryptionKey,secureCookies=true,now=()=>Date.now()}){
+/** @param {import('fastify').FastifyInstance} app @param {{store:import('./store.mjs').ServiceStore,licensing:import('./licensing.mjs').Licensing,encryptionKey:Buffer,backups?:import('./backups.mjs').Backups,secureCookies?:boolean,now?:()=>number}} options */
+export async function registerServiceApi(app,{store,licensing,encryptionKey,backups,secureCookies=true,now=()=>Date.now()}){
   await app.register(cookie);
   const dummy=await passwordHash(token());
   /** @param {string} sessionHash */
@@ -49,7 +50,7 @@ export async function registerServiceApi(app,{store,licensing,encryptionKey,secu
   });
   app.get('/api/activation/keys',async request=>{session(request);return {keys:licensing.publicKeys};});
   post('/api/activation/status',object({licenseId:string,installationId:string}),async request=>{const s=session(request,true),b=request.body,l=store.scope(b.licenseId,s.account_id),i=store.get('SELECT * FROM installations WHERE id=? AND account_id=? AND license_id=?',b.installationId,s.account_id,b.licenseId);requireValue(l&&i,'Unavailable installation',403);return {serverTime:now(),licenseStatus:l.status,installationStatus:i.status,endsAt:l.ends_at,writer:l.writer_id===i.id,generation:l.generation};});
-  post('/api/activation/challenge',object({licenseId:string,installationId:string,publicJwk:{type:'object'},purpose:{enum:['activate','presence']}},['licenseId','installationId','publicJwk']),async request=>licensing.challenge(session(request,true),request.body,now()));
+  post('/api/activation/challenge',object({licenseId:string,installationId:string,publicJwk:{type:'object'},purpose:{enum:['activate','presence','backup']},context:{type:'string',pattern:'^[a-f0-9]{64}$'}},['licenseId','installationId','publicJwk']),async request=>licensing.challenge(session(request,true),request.body,now()));
   /** @type {Array<[string,'enroll'|'heartbeat']>} */
   const proofRoutes=[['/api/activation/enroll','enroll'],['/api/activity/heartbeat','heartbeat']];
   for(const [url,method]of proofRoutes)post(url,object({challengeId:string,signature:string}),async request=>{
@@ -80,4 +81,21 @@ export async function registerServiceApi(app,{store,licensing,encryptionKey,secu
     const config={apk:{enabled:b.apkEnabled,url:b.apkEnabled?b.apkUrl:null,version:b.apkEnabled?b.apkVersion:null}};
     store.atomic(()=>{store.run('INSERT INTO settings VALUES(?,?) ON CONFLICT(id) DO UPDATE SET value=excluded.value','public',JSON.stringify(config));store.audit(s.account_id,'settings.public','public',b.reason,'',{},now());});return {ok:true};
   });
+  if(backups){
+    post('/api/backup/status',object({appLicenseId:string}),async request=>{
+      const s=session(request,true),l=store.scope(request.body.appLicenseId,s.account_id);requireValue(s.role==='customer'&&l,'Unavailable shop',403);
+      let versions=null;try{versions=backups.versions(s,l.shop_id,now());}catch{}
+      return {retentionDays:30,licenses:store.all('SELECT id,status,starts_at AS startsAt,ends_at AS endsAt FROM licenses WHERE shop_id=? AND kind=?',l.shop_id,'backup'),consent:store.get('SELECT enabled,policy_version,notice_at FROM backup_consents WHERE shop_id=? AND account_id=?',l.shop_id,s.account_id)||null,versions,writer:l.writer_id,generation:l.generation};
+    });
+    post('/api/backup/consent',object({shopId:string,backupLicenseId:string,enabled:{type:'boolean'},policyVersion:{const:1}}),async request=>backups.consent(session(request,true),request.body,now()));
+    app.post('/api/backup/dispatch',{bodyLimit:10*1024*1024,schema:{body:object({challengeId:string,signature:string,operation:{enum:['open','upload','download']},payload:{type:'object'}})}},async(request,reply)=>{
+      const b=/** @type {any} */(request.body),s=session(request,true);store.atomic(()=>store.limit('backup-upload:'+s.account_id,20,60000,now()));
+      const proof=await licensing.prove(s,b,'backup',now());requireValue(JSON.parse(proof.message).context===digest(canonical({operation:b.operation,payload:b.payload})),'Backup proof does not match payload',403);
+      if(b.operation==='open')requireValue(b.payload.appLicenseId===proof.license_id&&b.payload.installationId===proof.installation_id,'Backup installation mismatch',403);
+      else if(b.operation==='upload'){const stream=store.get('SELECT * FROM backup_streams WHERE id=? AND account_id=?',b.payload.streamId,s.account_id);requireValue(stream&&stream.app_license_id===proof.license_id&&stream.installation_id===proof.installation_id,'Backup installation mismatch',403);}
+      else{const version=store.get('SELECT v.id,s.app_license_id FROM backup_versions v JOIN backup_streams s ON s.id=v.stream_id WHERE v.id=? AND v.account_id=?',b.payload.versionId,s.account_id),license=store.scope(proof.license_id,s.account_id);requireValue(version&&version.app_license_id===proof.license_id&&license.writer_id===proof.installation_id,'Approved installation required to download backup content',403);}
+      store.atomic(()=>licensing.consume(proof,s,now()));
+      return b.operation==='open'?backups.openStream(s,b.payload,now()):b.operation==='upload'?backups.receive(s,b.payload,now()):backups.download(s,b.payload.versionId,now());
+    });
+  }
 }

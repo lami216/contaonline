@@ -46,9 +46,10 @@ export async function identityFor(accountId) {
     tx.onerror = tx.onabort = () => reject(tx.error || Error('تعذّر حفظ مفتاح التثبيت'));
   });
 }
-export async function installPermit(envelope, keys, identity) {
-  await verifyPermit(envelope, keys, identity);
-  const record = { envelope, keys, accountId:identity.accountId, maxWallMs:Math.max(Date.now(),envelope.payload.issuedAt), restriction:null };
+export async function installPermit(envelope, keys, identity,serverTime=Date.now()) {
+  await verifyPermit(envelope, keys, identity,serverTime);
+  const clientNow=Date.now();
+  const record = { envelope, keys, accountId:identity.accountId,clockOffsetMs:serverTime-clientNow,lastClientWallMs:clientNow,maxWallMs:Math.max(serverTime,envelope.payload.issuedAt), restriction:null };
   await writeService('permit:' + identity.accountId, record);
   await writeService('current-account', identity.accountId);
   return record;
@@ -58,7 +59,7 @@ export async function currentActivation() {
   if (!accountId) return null;
   const identity = await readService('identity:' + accountId), record = await readService('permit:' + accountId);
   if (!identity || !record) return null;
-  const result = await verifyPermit(record.envelope, record.keys, identity, Math.max(Date.now(),record.maxWallMs||0));
+  const result = await verifyPermit(record.envelope, record.keys, identity, Math.max(Date.now()+(record.clockOffsetMs||0),record.maxWallMs||0));
   return { identity, record, ...result };
 }
 export async function proof(identity, message) {
