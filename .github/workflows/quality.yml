@@ -12,6 +12,9 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --ipc=host --init
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
@@ -21,10 +24,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run check
-      - run: |
-          sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources
-          npx playwright install --with-deps chromium webkit
-        timeout-minutes: 6
+      - run: node -e "const fs=require('node:fs'),pw=require('playwright');for(const name of ['chromium','webkit'])if(!fs.existsSync(pw[name].executablePath()))throw Error('Missing pinned browser '+name)"
       - run: npm run test:e2e
       - run: npm run test:e2e
         env:
