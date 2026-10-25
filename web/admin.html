@@ -1,1 +1,37 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>إدارة الكرنه</title><link rel="stylesheet" href="/landing.css"></head><body><main><h1>إدارة الكرنه</h1><p>حساب الإدارة مستقل عن مستخدمي المحل. كل تعديل حساس يحتاج سببًا ويُسجّل للتدقيق.</p><section id="login"><form id="admin-login"><label>اسم المستخدم<input name="username" autocomplete="username" required></label><label>كلمة المرور<input name="password" type="password" autocomplete="current-password" required></label><label>رمز المصادقة الثنائية<input name="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" required></label><button>دخول الإدارة</button></form></section><p id="message" role="status"></p><section id="workspace" hidden><button id="logout">خروج</button><label>بحث في السجلات<input id="search" type="search"></label><div id="actions"></div><div id="records"></div></section></main><script type="module" src="/admin/admin.js"></script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light"><title>payzone | إدارة المؤسسات</title><link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">انتقل إلى المحتوى</a>
+  <section id="login" class="login-screen"><div class="login-card">
+    <span class="brand" dir="ltr">payzone<span class="brand-dot">.</span></span>
+    <p class="eyebrow">لوحة إدارة كونتا أونلاين</p><h1>كل مؤسسة، في مكان واحد</h1>
+    <p class="muted">دخول الإدارة محمي بالمصادقة الثنائية، ومستقل عن مستخدمي المحل.</p>
+    <form id="admin-login">
+      <label>اسم المستخدم<input name="username" autocomplete="username" autocapitalize="none" required></label>
+      <label>كلمة المرور<input name="password" type="password" autocomplete="current-password" required></label>
+      <label>رمز المصادقة الثنائية<input name="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" dir="ltr" required></label>
+      <button class="primary" type="submit">دخول الإدارة</button>
+    </form><p id="login-message" role="status"></p>
+  </div></section>
+  <div id="workspace" class="app-shell" hidden>
+    <aside class="sidebar" aria-label="التنقل الإداري">
+      <a class="brand" href="#customers" dir="ltr">payzone<span class="brand-dot">.</span></a><span class="sidebar-caption">إدارة كونتا أونلاين</span>
+      <nav id="primary-nav">
+        <a href="#customers" data-nav="customers"><span aria-hidden="true">▦</span> العملاء والمؤسسات</a>
+        <a href="#plans" data-nav="plans"><span aria-hidden="true">▤</span> الباقات</a>
+        <a href="#privacy" data-nav="privacy" data-owner-only><span aria-hidden="true">◇</span> الخصوصية والحذف</a>
+        <a href="#settings" data-nav="settings" data-owner-only><span aria-hidden="true">⚙</span> إعدادات الخدمة</a>
+      </nav>
+      <div class="sidebar-bottom"><span id="role-label">إدارة payzone</span><button id="logout" type="button">تسجيل الخروج</button></div>
+    </aside>
+    <div class="main-shell"><header class="topbar"><span>مساحة العمل</span><span class="secure-label">دخول إداري محمي</span></header>
+      <main id="main" tabindex="-1"><p id="message" class="message" role="status" hidden></p><div id="page"></div></main>
+    </div>
+  </div>
+  <script type="module" src="/admin/admin.js"></script>
+</body>
+</html>

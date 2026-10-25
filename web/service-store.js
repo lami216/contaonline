@@ -23,12 +23,14 @@ export async function writeService(id, value) {
   const db = await serviceDb();
   return new Promise((resolve,reject) => {
     const tx = db.transaction('service','readwrite');
-    tx.objectStore('service').put({ id, value });
+    const store=tx.objectStore('service'),accountId=id.startsWith('permit:')?id.slice(7):id.startsWith('identity:')?id.slice(9):null;
+    if(accountId){const barrier=store.get('erased:'+accountId);barrier.onsuccess=()=>{if(barrier.result){if(id.startsWith('identity:')){tx.abort();return;}value={...value,restriction:'account-deleted'};}store.put({id,value});};}else store.put({id,value});
     tx.oncomplete = () => resolve(value);
     tx.onerror = tx.onabort = () => reject(tx.error || Error('تعذّر حفظ بيانات التفعيل'));
   });
 }
 export async function identityFor(accountId) {
+  if(await readService('erased:'+accountId))throw Error('هذا الحساب محذوف / Ce compte est supprimé');
   const slot = 'identity:' + accountId;
   const existing = await readService(slot);
   if (existing) return existing;
@@ -40,8 +42,7 @@ export async function identityFor(accountId) {
   return new Promise((resolve,reject) => {
     const tx = db.transaction('service','readwrite'), store = tx.objectStore('service');
     let winner;
-    const get = store.get(slot);
-    get.onsuccess = () => { winner = get.result?.value || candidate; if (!get.result) store.put({id:slot,value:candidate}); };
+    const barrier=store.get('erased:'+accountId);barrier.onsuccess=()=>{if(barrier.result){tx.abort();return;}const get = store.get(slot);get.onsuccess = () => { winner = get.result?.value || candidate; if (!get.result) store.put({id:slot,value:candidate}); };};
     tx.oncomplete = () => resolve(winner);
     tx.onerror = tx.onabort = () => reject(tx.error || Error('تعذّر حفظ مفتاح التثبيت'));
   });
@@ -59,6 +60,7 @@ export async function currentActivation() {
   if (!accountId) return null;
   const identity = await readService('identity:' + accountId), record = await readService('permit:' + accountId);
   if (!identity || !record) return null;
+  if(await readService('erased:'+accountId))record.restriction='account-deleted';
   const result = await verifyPermit(record.envelope, record.keys, identity, Math.max(Date.now()+(record.clockOffsetMs||0),record.maxWallMs||0));
   return { identity, record, ...result };
 }
@@ -66,3 +68,14 @@ export async function proof(identity, message) {
   return base64url(await crypto.subtle.sign({ name:'ECDSA', hash:'SHA-256' }, identity.privateKey, new TextEncoder().encode(message)));
 }
 export { fingerprint };
+export async function markServiceErased(accountId){
+  await writeService('erased:'+accountId,true);
+  dispatchEvent(new CustomEvent('conta-account-erased',{detail:{accountId}}));
+}
+export async function eraseLocalAccount(accountId,shopIds){
+  await markServiceErased(accountId);
+  const prefix='contaonline-shop|'+accountId+'|',names=new Set(shopIds.map(shopId=>prefix+shopId));
+  if(typeof indexedDB.databases==='function')for(const database of await indexedDB.databases())if(database.name?.startsWith(prefix))names.add(database.name);
+  for(const name of names)await new Promise((resolve,reject)=>{const request=indexedDB.deleteDatabase(name);request.onsuccess=()=>resolve();request.onerror=()=>reject(request.error);request.onblocked=()=>reject(Error('أغلق نوافذ المحل الأخرى ثم أعد حذف بيانات هذا الجهاز / Fermez les autres fenêtres du magasin puis réessayez'));});
+  const db=await serviceDb();await new Promise((resolve,reject)=>{const tx=db.transaction('service','readwrite'),store=tx.objectStore('service');store.delete('identity:'+accountId);store.delete('permit:'+accountId);const current=store.get('current-account');current.onsuccess=()=>{if(current.result?.value===accountId)store.delete('current-account');};tx.oncomplete=resolve;tx.onerror=tx.onabort=()=>reject(tx.error);});
+}

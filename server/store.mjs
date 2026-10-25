@@ -10,7 +10,7 @@ export class ServiceStore {
   /** @param {string} filename */
   constructor(filename){
     this.db=new DatabaseSync(filename);this.db.exec('PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;');
-    if(this.get("SELECT name FROM sqlite_master WHERE type='table' AND name='migrations'")&&Number(this.get('SELECT MAX(version) AS version FROM migrations').version)>2){this.db.close();throw Error('Unsupported future service schema; database was not replaced');}
+    if(this.get("SELECT name FROM sqlite_master WHERE type='table' AND name='migrations'")&&Number(this.get('SELECT MAX(version) AS version FROM migrations').version)>4){this.db.close();throw Error('Unsupported future service schema; database was not replaced');}
     this.atomic(()=>this.db.exec(`
       CREATE TABLE IF NOT EXISTS migrations(version INTEGER PRIMARY KEY, applied_at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS settings(id TEXT PRIMARY KEY,value TEXT NOT NULL);
@@ -33,7 +33,18 @@ export class ServiceStore {
       CREATE UNIQUE INDEX IF NOT EXISTS incident_open ON incidents(license_id,kind) WHERE resolved_at IS NULL;
       CREATE INDEX IF NOT EXISTS installations_license ON installations(license_id);
       CREATE INDEX IF NOT EXISTS licenses_shop ON licenses(shop_id);
+      CREATE INDEX IF NOT EXISTS shops_account ON shops(account_id,id);
+      CREATE INDEX IF NOT EXISTS installations_account ON installations(account_id,first_at);
+      CREATE INDEX IF NOT EXISTS audit_account_action_time ON audit(actor_id,action,at);
+      CREATE INDEX IF NOT EXISTS audit_target ON audit(target_id,id);
       INSERT OR IGNORE INTO migrations VALUES(1,unixepoch()*1000);
+      CREATE TABLE IF NOT EXISTS privacy_deletion_requests(id TEXT PRIMARY KEY,account_id TEXT NOT NULL REFERENCES accounts(id),status TEXT NOT NULL CHECK(status IN ('requested','in-review','needs-verification','withdrawn')),created_at INTEGER NOT NULL,updated_at INTEGER NOT NULL,response_due_at INTEGER NOT NULL,message_ar TEXT NOT NULL,message_fr TEXT NOT NULL);
+      CREATE UNIQUE INDEX IF NOT EXISTS one_open_privacy_request ON privacy_deletion_requests(account_id) WHERE status IN ('requested','in-review','needs-verification');
+      INSERT OR IGNORE INTO migrations VALUES(3,unixepoch()*1000);
+      CREATE TABLE IF NOT EXISTS privacy_owner_credentials(account_id TEXT PRIMARY KEY REFERENCES accounts(id),code_hash TEXT NOT NULL,version INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS privacy_erasure_previews(nonce_hash TEXT PRIMARY KEY,account_id TEXT NOT NULL REFERENCES accounts(id),credential_version INTEGER NOT NULL,owner_version INTEGER NOT NULL,expires_at INTEGER NOT NULL);
+      INSERT OR IGNORE INTO migrations VALUES(4,unixepoch()*1000);
+      DELETE FROM limits WHERE key LIKE 'login:%' AND length(key)=70;
     `));
   }
   /** Dynamic SQL row boundary; route schemas and relational constraints validate writes.

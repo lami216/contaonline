@@ -25,10 +25,13 @@ Dry run has no mutation. Apply queues in-account expiry notices; eligible deleti
 
 ## Encrypted server backup and disaster recovery
 
+Read [ACCOUNT_ERASURE.md](ACCOUNT_ERASURE.md) first: new archives are registered and bound to the separate **current erasure ledger**. Legacy format-1 archives need a reviewed migration. Do not bypass the ledger or overwrite it with an old copy.
+
 Quiesce service writes/retention during a consistent server archive, or retry if a private file changes/disappears. The utility uses SQLite's online backup API and includes database/audit/config plus retained private files; it never prints contents or key material. Its archive is AES-256-GCM encrypted. Keep SERVER_BACKUP_KEY_FILE separately, with an offline copy; losing it loses archive recovery.
 
 ```sh
 export SERVER_BACKUP_KEY_FILE=/approved-private/archive.key
+export ERASURE_LEDGER_FILE=/approved-private/privacy-ledger.sqlite
 npm run server:recovery -- key
 npm run server:recovery -- snapshot /approved-private/server.conta.enc
 npm run server:recovery -- restore /approved-private/server.conta.enc /approved-private/new-restored-service
@@ -40,6 +43,6 @@ Keep app-signing key rings and archive/MFA keys out of Git/public. For planned i
 
 ## Release / rollback
 
-Use one local disk and a non-root service user behind an explicitly approved TLS proxy. Choose a fixed origin and nonconflicting port with the owner; do not guess VPS paths. Preserve private data separately from release directories. Snapshot and rehearse recovery before migrations. Current server schemas 1/2 are additive; local IndexedDB v2 preserves v1 stores and adds outbox. A rollback must remain schema-compatible; never clear new user data or copy only a live SQLite main file while ignoring WAL. Future unsupported server schema fails closed.
+Use one local disk and a non-root service user behind an explicitly approved TLS proxy. Choose a fixed origin and nonconflicting port with the owner; do not guess VPS paths. Preserve private data separately from release directories. Snapshot and rehearse recovery before migrations. Current server schemas 1–4 are additive; local IndexedDB v2 preserves v1 stores and adds outbox. A rollback must remain schema-compatible; never clear new user data or copy only a live SQLite main file while ignoring WAL. Future unsupported server schema fails closed.
 
 Measurements in evidence/MEASUREMENTS.json are synthetic local health-inject/payload checks, not internet throughput, concurrent user capacity or iPhone performance. Request IDs are returned with failures; no financial payload/credentials are logged. Further telemetry/pagination and acceptance gates are listed in RELEASE_ACCEPTANCE.md.

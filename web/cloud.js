@@ -3,6 +3,7 @@ import { allOutbox, acknowledgeCloud, cloudStatus, configureCloud } from './outb
 import { offerFile } from './web-export.js';
 import { checkSnapshot } from './backup-contract.js';
 import { validateState } from './database.js';
+import { openPrivacyPolicy } from './privacy.js';
 const t=(ar,fr)=>document.documentElement.lang==='fr'?fr:ar;
 const el=(tag,text)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node;};
 let running=false,nextAttempt=0,failures=0,lastAttempt=null,lastError='',dialog;
@@ -39,6 +40,7 @@ export async function openBackupPanel(){
     const licenses=remote.licenses.filter(l=>l.status==='approved'&&(l.endsAt===null||l.endsAt>Date.now()));
     if(licenses.length){
       const cadence=el('select');for(const [value,label]of [[86400000,t('يوميًا أثناء فتح التطبيق','Chaque jour pendant l’utilisation')],[604800000,t('أسبوعيًا أثناء فتح التطبيق','Chaque semaine pendant l’utilisation')],[60000,t('كل دقيقة أثناء الفتح','Chaque minute pendant l’utilisation')]]){const option=el('option',label);option.value=value;cadence.append(option);}dialog.append(cadence);
+      const policy=el('button',t('قراءة سياسة الخصوصية والاحتفاظ','Lire la politique de confidentialité et de conservation'));policy.type='button';policy.onclick=openPrivacyPolicy;dialog.append(policy);
       const label=el('label'),consent=el('input');consent.type='checkbox';label.append(consent,document.createTextNode(t('قرأت سياسة الرفع والاحتفاظ وأوافق على بدء رفع بيانات هذا المحل.','J’ai lu et j’accepte l’envoi et la conservation de ce magasin.')));dialog.append(label);
       const enable=el('button',t('تفعيل النسخ لهذا المحل','Activer pour ce magasin'));enable.onclick=async()=>{
         enable.disabled=true;try{

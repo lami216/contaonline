@@ -1,5 +1,6 @@
 import { currentActivation, writeService } from './service-store.js';
-let registration,preparing,cacheComplete=false,requestingUpdate=false;
+import { openPrivacyCenter } from './privacy.js';
+let registration,preparing,cacheComplete=false,requestingUpdate=false,statusRevision=0;
 const t=(ar,fr)=>document.documentElement.lang==='fr'?fr:ar;
 function banner(){
   let panel=document.getElementById('web-pwa-status');
@@ -7,21 +8,26 @@ function banner(){
   return panel;
 }
 export async function refreshOfflineStatus(){
+  const revision=++statusRevision;
   const panel=banner();panel.replaceChildren();
   const text=document.createElement('span');text.dataset.offlineStatus='';text.textContent=t('جارٍ تجهيز الاستخدام دون إنترنت…','Préparation du mode hors ligne…');panel.append(text);
   try{
     await writeService('storage-probe',{at:Date.now()});
     const active=await currentActivation();
+    if(revision!==statusRevision)return;
     if(globalThis.ContaoRuntime?.storageState==='failed')text.textContent=t('لم يكتمل فتح تخزين المحل؛ بياناتك لم تُستبدل.','Stockage du magasin indisponible ; aucune donnée remplacée.');
     else if(cacheComplete&&active&&globalThis.ContaoRuntime?.storageState==='ready'&&globalThis.ContaoService?.canWrite())text.textContent=t('جاهز للاستخدام دون إنترنت ضمن صلاحية التصريح','Prêt hors ligne pendant la validité du permis');
     else if(cacheComplete&&active&&globalThis.ContaoRuntime?.storageState==='ready')text.textContent=t('جاهز للعرض والتصدير محليًا','Prêt en lecture et export local');
     else if(!active)text.textContent=t('أكمل التفعيل للبدء؛ التجهيز لا يعني تفعيل الاشتراك','Terminez l’activation ; la préparation ne vaut pas abonnement');
-    if(active&&globalThis.ContaoService?.reconnect){const account=document.createElement('button');account.type='button';account.textContent=t('الحساب والتجديد','Compte et renouvellement');account.onclick=()=>globalThis.ContaoService.reconnect();panel.append(account);}
+    if(active&&globalThis.ContaoService?.reconnect){const account=document.createElement('button');account.type='button';account.textContent=t('حساب الخدمة','Compte de service');account.onclick=()=>globalThis.ContaoService.reconnect();panel.append(account);}
+    const privacy=document.createElement('button');privacy.type='button';privacy.textContent=t('الخصوصية والحساب','Confidentialité et compte');privacy.onclick=openPrivacyCenter;panel.append(privacy);
     if(active&&globalThis.ContaoService?.openBackupPanel){const backup=document.createElement('button');backup.type='button';backup.textContent=t('النسخ الاختياري','Sauvegarde facultative');backup.onclick=()=>globalThis.ContaoService.openBackupPanel().catch(error=>globalThis.ContaoPwa.notice(error.message));panel.append(backup);}
     if(registration?.waiting){
       const update=document.createElement('button');update.type='button';update.textContent=t('تحديث آمن','Mettre à jour');update.onclick=()=>requestUpdate();panel.append(update);
     }
-    if(navigator.storage?.persist&&!await navigator.storage.persisted()){
+    const needsPersistence=navigator.storage?.persist&&!await navigator.storage.persisted();
+    if(revision!==statusRevision)return;
+    if(needsPersistence){
       const persist=document.createElement('button');persist.type='button';persist.textContent=t('تعزيز حفظ البيانات','Renforcer la conservation');
       persist.onclick=async()=>{const ok=await navigator.storage.persist();persist.textContent=ok?t('تم تعزيز الحفظ؛ مسح بيانات الموقع يحذفها','Conservation renforcée ; effacer le site supprime les données'):t('احتفظ بنسخ خارج المتصفح','Conservez des copies externes');};panel.append(persist);
     }

@@ -1,5 +1,15 @@
 # contaonline handoff — 2026-10-23
 
+## payzone administration workspace — 2026-10-24
+
+The owner authorized the directory/institution-page redesign. `/admin/` now has scoped customer search/filters/pagination, institution overview/alerts/subscriptions/devices/backup/payment/account tabs, contextual reviewed actions, one-time credential delivery, separate plans/settings/privacy pages and authenticated deep-link resume. Payment mechanisms, renewal/activation dates and backup-consent authority are unchanged. See [PAYZONE_ADMIN_REVIEW.md](PAYZONE_ADMIN_REVIEW.md) and the updated [PAYZONE_ADMIN_FLOW.md](PAYZONE_ADMIN_FLOW.md). New server reads are scoped metadata with no keys, private backup paths/content or cross-institution payment records; support stays restricted. No extra users or deployment were created. The live demo remains intact; browser mutations use disposable fixtures.
+
+## Local privacy follow-up — 2026-10-24
+
+The subsequent owner-approved phase now implements actual scoped account/payment/audit/cloud-file erasure, separate business-owner authority, durable receipts/retry, managed-archive redaction and tombstone-aware recovery (migration 4). See [ACCOUNT_ERASURE.md](ACCOUNT_ERASURE.md) for current scope/runbook/tests and external-copy boundaries. The owner approved **deletion of all associated financial records** and confirmed **they alone operate payzone administration for now**; [PAYZONE_ADMIN_FLOW.md](PAYZONE_ADMIN_FLOW.md) records that discussion. Payment mechanics remain unchanged. The visible demo was retained; destructive tests use disposable fixtures. No deployment or push is included.
+
+Branch `feat/privacy-account-requests` adds bilingual offline privacy, service-account deletion-request initiation/status/withdrawal, MFA-owner review, optional-upload pause and technical-support wording. Source/Android/payment terms remain unchanged. Migration 3 is additive. See [PRIVACY_REVIEW.md](PRIVACY_REVIEW.md) for entry points, actual verification and the explicit erasure/retention/archive work still required before claiming complete account deletion or release readiness. The owner confirmed privacy contact **payzone / pay21694@gmail.com** on 2026-10-24; defaults are updated. The operating review target still needs confirmation. This branch is local; no publication or upstream merge is included.
+
 ## Scope and immutable source
 
 Only contaonline was changed. Source: feat/approved-seller-app @ 1efb01fc1cd7bc62670510e57c6158734ad4bf05. Its 52 imported files remain byte-identical and Git-blob verified; adaptations are explicit in scripts/adapt-web.mjs and web/. Resource origins, licenses and hashes are in resources/. No Android/native activation/source workflow changes, secrets, customer data, merge, visibility change or deployment are included.
@@ -28,7 +38,7 @@ Optional separately entitled backups: explicit consent, atomic local snapshot/de
 
 ## Verification and operating boundary
 
-Latest local full check: 24 tests, 0 failures/skips, six upstream baseline scripts, 52 source fingerprints, lint, types and build. Two independent SQLite-connection tests cover first activation and simultaneous upload/writer transfer. PDF samples were regenerated and all six Arabic/French pages visually inspected with Poppler. Measurements are explicitly synthetic in docs/evidence/MEASUREMENTS.json, not a capacity promise.
+Latest local full check: 39 tests, 0 failures/skips, six upstream baseline scripts, 52 source fingerprints, lint, types and build. Two independent SQLite-connection tests cover first activation and simultaneous upload/writer transfer. PDF samples were regenerated and all six Arabic/French pages visually inspected with Poppler. Measurements are explicitly synthetic in docs/evidence/MEASUREMENTS.json, not a capacity promise.
 
 Read RELEASE_ACCEPTANCE.md before claiming completion. Physical iPhone/home-screen/offline/share/printing acceptance (IPHONE_ACCEPTANCE.md), broader end-user accounting UI acceptance and real disk/process/network stress remain open. A browser pass cannot replace these gates. Review readiness remains 503, the server binds loopback with a private gate on every route and refuses NODE_ENV=production. No staging endpoint was published. Recommend making the repository private; do not change visibility without separate approval.
 

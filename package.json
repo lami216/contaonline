@@ -27,7 +27,7 @@
     "retention:apply": "node scripts/service-admin.mjs retention-apply",
     "server:recovery": "node scripts/server-recovery.mjs",
     "test:pdf": "node scripts/verify-pdf-render.mjs",
-    "test:e2e": "node e2e/pwa.mjs && node e2e/service.mjs"
+    "test:e2e": "node e2e/pwa.mjs && node e2e/service.mjs && node e2e/admin.mjs"
   },
   "dependencies": {
     "@fastify/cookie": "11.1.3",

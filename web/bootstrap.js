@@ -1,7 +1,8 @@
-import { currentActivation, identityFor, installPermit, proof, readService, writeService } from './service-store.js';
+import { currentActivation, identityFor, installPermit, proof, readService, writeService, markServiceErased } from './service-store.js';
 import { preparePwa, refreshOfflineStatus } from './pwa.js';
 import { canonical } from './permit.js';
 import { openBackupPanel, startCloud } from './cloud.js';
+import { openPrivacyCenter, openPrivacyPolicy } from './privacy.js';
 const language=()=>localStorage.getItem('alkarna-site-language')==='fr'?'fr':'ar';
 const t=(ar,fr)=>language()==='fr'?fr:ar;
 const root=document.getElementById('phone');
@@ -13,7 +14,7 @@ function element(tag,text){const node=document.createElement(tag);if(text)node.t
 async function api(url,body){
   const response=await fetch(url,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json',...(csrf?{'x-csrf-token':csrf}:{})},body:JSON.stringify(body)});
   const result=await response.json().catch(()=>({}));
-  if(!response.ok)throw Error(result.message||t('تعذّر إتمام الطلب. حاول لاحقًا.','La demande a échoué. Réessayez plus tard.'));
+  if(!response.ok){const error=Error(result.message||t('تعذّر إتمام الطلب. حاول لاحقًا.','La demande a échoué. Réessayez plus tard.'));error.status=response.status;throw error;}
   return result;
 }
 async function requireWrite(scope){
@@ -23,7 +24,7 @@ async function requireWrite(scope){
   const record=active.record,clientNow=Date.now(),now=clientNow+(record.clockOffsetMs||0),previous=record.maxWallMs||active.payload.issuedAt;
   if(clientNow<(record.lastClientWallMs||clientNow)-120000){record.restriction='clock-rollback';await writeService('permit:'+active.payload.accountId,record);}
   activation={...active,record};
-  if(record.restriction||!active.canWrite)throw Error(t('الترخيص للعرض والتصدير فقط. اتصل بالخدمة للتجديد أو المراجعة.','Licence en lecture et export uniquement. Connectez-vous pour renouveler ou vérifier.'));
+  if(record.restriction||!active.canWrite)throw Error(t('العرض والتصدير متاحان؛ صلاحية تسجيل عمليات جديدة غير متاحة حاليًا.','Lecture et export disponibles ; l’autorisation d’enregistrer de nouvelles opérations n’est pas disponible actuellement.'));
   record.maxWallMs=Math.max(now,previous);record.lastClientWallMs=Math.max(clientNow,record.lastClientWallMs||clientNow);await writeService('permit:'+active.payload.accountId,record);activation={...active,record};
 }
 function canWrite(){return !!activation?.canWrite&&!activation.record.restriction&&Date.now()>=(activation.record.lastClientWallMs||Date.now())-120000&&Math.max(Date.now()+(activation.record.clockOffsetMs||0),activation.record.maxWallMs)<activation.payload.expiresAt;}
@@ -70,7 +71,9 @@ function renderGate(error=''){
   const submit=element('button',t('دخول وتفعيل','Connexion et activation'));submit.type='submit';submit.className='primary';form.append(submit);
   const newPassword=element('input');newPassword.type='password';newPassword.autocomplete='new-password';newPassword.minLength=12;const changeLabel=element('label',t('كلمة مرور خدمة جديدة (اختياري، 12 حرفًا على الأقل)','Nouveau mot de passe de service (facultatif, 12 caractères minimum)'));changeLabel.append(newPassword);form.append(changeLabel);
   const message=element('p',error);message.id='web-message';message.setAttribute('role','status');card.append(form,message);
-  const info=element('p',t('حذف بيانات الموقع قد يحذف بيانات المحل والمفتاح. احتفظ بنسخ خارج المتصفح.','Effacer les données du site peut supprimer les données et la clé. Conservez des sauvegardes externes.'));card.append(info);main.append(card);root.append(main);
+  const info=element('p',t('حذف بيانات الموقع قد يحذف بيانات المحل والمفتاح. احتفظ بنسخ خارج المتصفح.','Effacer les données du site peut supprimer les données et la clé. Conservez des sauvegardes externes.'));card.append(info);
+  for(const [label,action]of [[t('سياسة الخصوصية','Politique de confidentialité'),openPrivacyPolicy],[t('الخصوصية وطلبات الحساب','Confidentialité et demandes du compte'),openPrivacyCenter]]){const button=element('button',label);button.type='button';button.onclick=action;card.append(button);}
+  main.append(card);root.append(main);
   form.onsubmit=async event=>{
     event.preventDefault();submit.disabled=true;message.textContent=t('جارٍ التحقق…','Vérification…');
     try{
@@ -111,12 +114,13 @@ async function connectedPresence(){
     const result=status;
     if(!result.writer&&canWrite())notice(t('هذا التثبيت يبقى مسجلًا، لكنه ليس الكاتب المعتمد للنسخ. بياناتك المحلية محفوظة، ولا تُدمج تلقائيًا.','Cette installation reste connue, sans autorité d’envoi. Les données locales sont conservées et ne sont pas fusionnées automatiquement.'));
     if(result.reviewRequired)notice(t('رُصد نشاط متداخل يحتاج مراجعة. رفع النسخ معلق؛ بياناتك المحلية محفوظة.','Activité simultanée à vérifier. Envoi des sauvegardes suspendu ; données locales conservées.'));
-  }catch{/* Network/session failure never resets the local subscription or deletes data. */}finally{connecting=false;}
+  }catch(error){if(error.status===410){await markServiceErased(activation.payload.accountId);notice(t('حُذف حساب الخدمة. بيانات هذا الجهاز متاحة للعرض والتصدير فقط.','Le compte de service est supprimé. Les données locales restent disponibles en lecture et export.'));}}finally{connecting=false;}
 }
+addEventListener('conta-account-erased',event=>{if(activation?.payload.accountId===event.detail.accountId){activation.record.restriction='account-deleted';refreshOfflineStatus();}});
 setInterval(connectedPresence,60000);addEventListener('online',connectedPresence);document.addEventListener('visibilitychange',connectedPresence);
 await preparePwa().catch(error=>notice(error.message));
 try{
   const active=await currentActivation();
   if(active)await bootShop(active);else renderGate();
 }catch(error){renderGate(error.message);}
-setInterval(()=>{if(activation&&!canWrite()){refreshOfflineStatus();globalThis.ContaoPwa.notice(t('العرض والتصدير فقط؛ جدّد الترخيص لاستئناف التسجيل.','Lecture et export uniquement ; renouvelez la licence.'));}},15000);
+setInterval(()=>{if(activation&&!canWrite()){refreshOfflineStatus();globalThis.ContaoPwa.notice(t('العرض والتصدير متاحان؛ صلاحية تسجيل عمليات جديدة غير متاحة حاليًا.','Lecture et export disponibles ; l’autorisation d’enregistrer de nouvelles opérations n’est pas disponible actuellement.'));}},15000);

@@ -6,6 +6,7 @@ import { applyDelta, checkSnapshot } from '../shared/backup.mjs';
 const sourceValidationModule='../approved-runtime/database.js';
 const {validateState}=await import(sourceValidationModule);
 import { requireValue } from './store.mjs';
+import { accountFolder } from './erasure-data.mjs';
 /** @param {string|Buffer} value */
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const DAY=86400000;
@@ -19,6 +20,7 @@ export class Backups {
       CREATE TABLE IF NOT EXISTS backup_events(stream_id TEXT NOT NULL REFERENCES backup_streams(id),sequence INTEGER NOT NULL,event_id TEXT UNIQUE NOT NULL,digest TEXT NOT NULL,PRIMARY KEY(stream_id,sequence));
       CREATE TABLE IF NOT EXISTS backup_versions(id TEXT PRIMARY KEY,stream_id TEXT NOT NULL REFERENCES backup_streams(id),shop_id TEXT NOT NULL REFERENCES shops(id),account_id TEXT NOT NULL REFERENCES accounts(id),sequence INTEGER NOT NULL,checksum TEXT NOT NULL,bytes INTEGER NOT NULL,path TEXT NOT NULL,created_at INTEGER NOT NULL,status TEXT NOT NULL CHECK(status IN ('ready','deleting','deleted')));
       CREATE INDEX IF NOT EXISTS backup_versions_shop ON backup_versions(shop_id,created_at);
+      CREATE INDEX IF NOT EXISTS backup_versions_account ON backup_versions(account_id,status,created_at);
       INSERT OR IGNORE INTO migrations VALUES(2,unixepoch()*1000);
     `));
   }
@@ -33,6 +35,7 @@ export class Backups {
     requireValue(session.role==='customer'&&policyVersion===1&&typeof enabled==='boolean','Explicit backup consent required',403);
     return this.store.atomic(()=>{
       requireValue(this.store.get('SELECT id FROM accounts WHERE id=? AND role=? AND disabled=0',session.account_id,'customer'),'Account authority unavailable',403);
+      if(enabled)requireValue(!this.store.get("SELECT id FROM privacy_deletion_requests WHERE account_id=? AND status IN ('requested','in-review','needs-verification')",session.account_id),'Withdraw the pending deletion request before enabling uploads',409);
       const l=this.store.scope(backupLicenseId,session.account_id);requireValue(l&&l.kind==='backup'&&l.shop_id===shopId&&l.status==='approved'&&(l.starts_at===null||l.starts_at<=now)&&(l.ends_at===null||l.ends_at>now),'Backup subscription unavailable',403);
       if(enabled&&l.starts_at===null)this.store.run('UPDATE licenses SET starts_at=?,ends_at=?+duration_ms WHERE id=?',now,now,l.id);
       this.store.run('INSERT INTO backup_consents VALUES(?,?,?,?,1,?,NULL) ON CONFLICT(shop_id) DO UPDATE SET backup_license_id=excluded.backup_license_id,enabled=excluded.enabled,policy_version=1,consented_at=excluded.consented_at,notice_at=NULL',shopId,session.account_id,l.id,Number(enabled),now);
@@ -79,7 +82,8 @@ export class Backups {
       if(cursor===stream.cursor)return {cursor,versionId:stream.latest_version_id,durable:true};
       const bytes=Buffer.from(JSON.stringify(snapshot));requireValue(bytes.length<=this.maxSnapshotBytes,'Backup exceeds snapshot size limit',413);
       const used=this.store.get('SELECT COALESCE(SUM(bytes),0) AS bytes FROM backup_versions WHERE account_id=? AND status<>?',session.account_id,'deleted').bytes;requireValue(used+bytes.length<=this.maxAccountBytes,'Backup storage is full; local data remains on your device',507);
-      const id=randomUUID(),file=path.join(this.directory,id+'.json'),fd=openSync(file,'wx',0o600);
+      const accountDirectory=path.join(this.directory,accountFolder(session.account_id));mkdirSync(accountDirectory,{recursive:true,mode:0o700});
+      const id=randomUUID(),file=path.join(accountDirectory,id+'.json'),fd=openSync(file,'wx',0o600);
       try{writeFileSync(fd,bytes);fsyncSync(fd);}finally{closeSync(fd);}
       if(process.platform!=='win32'){const directoryFd=openSync(this.directory,'r');try{fsyncSync(directoryFd);}finally{closeSync(directoryFd);}}
       this.store.run('INSERT INTO backup_versions VALUES(?,?,?,?,?,?,?,?,?,?)',id,stream.id,stream.shop_id,session.account_id,cursor,hash(bytes),bytes.length,file,now,'ready');
